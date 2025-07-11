@@ -116,45 +116,40 @@ const createAndUpdateProfile = async (req, res) => {
 // Get Profile Controller
 const getProfile = async (req, res) => {
   try {
-    const userId = req.user._id;
-    console.log("getProfile ", userId);
-
-    // Validate userId
-    if (!userId) {
-      return res.status(400).json({ error: "User not authenticated" });
-    }
-
-    // Find the profile by userId
-    const profile = await Profile.findOne({ userId }).populate(
-      "userId",
-      "email"
-    ); // Populate specific fields from User model
-
-    if (!profile) {
-      return res.status(404).json({ error: "Profile not found" });
-    }
-    const email = profile.userId.email;
-    // Convert address object to a formatted string
-    const { street, city, state, postalCode, country } = profile.address;
-    const addressString = `${street}, ${city}, ${state}, ${postalCode}, ${country}`;
-
-    const profileObj = {
-      ...profile.toObject(), // Convert Mongoose document to plain object
-      email, // Add email field
-      address: addressString, // Overwrite address field with formatted string
-    };
-
-    console.log(profileObj);
-
-    return res.status(200).json({ profile: profileObj });
+    const profiles = await Profile.find().populate("userId", "email");
+    // Optionally format each profile as needed
+    const formattedProfiles = profiles.map(profile => {
+      const { street, city, state, postalCode, country } = profile.address;
+      const addressString = `${street}, ${city}, ${state}, ${postalCode}, ${country}`;
+      return {
+        ...profile.toObject(),
+        email: profile.userId.email,
+        address: addressString,
+      };
+    });
+    return res.status(200).json({ profiles: formattedProfiles });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Server error", details: error.message });
+    return res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+// Get Profile by userId
+const getUserProfileById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    // Find the profile for the given userId
+    const profile = await Profile.findOne({ userId });
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found for this user" });
+    }
+    return res.status(200).json(profile);
+  } catch (error) {
+    return res.status(500).json({ error: "Server error", details: error.message });
   }
 };
 
 module.exports = {
   createAndUpdateProfile,
   getProfile,
+  getUserProfileById,
 };

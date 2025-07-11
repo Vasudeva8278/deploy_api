@@ -10,9 +10,38 @@ const profileModel = require("../models/profileModel");
 
 const getAllUsers = async (req, res) => {
   try {
-    
+    // Get all users
     const users = await User.find();
-    res.json(users);
+    // Get all profiles
+    const profiles = await profileModel.find();
+    // Create a map for quick lookup
+    const profileMap = new Map();
+    profiles.forEach(profile => {
+      profileMap.set(profile.userId.toString(), profile);
+    });
+    // Merge user and profile data
+    const usersWithProfiles = users.map(user => {
+      const profile = profileMap.get(user._id.toString());
+      return {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        orgId: user.orgId,
+        features: user.features,
+        emailVerified: user.emailVerified,
+        profilePic: (profile && profile.profilePic) ? profile.profilePic : (user.profilePic || null),
+        firstName: profile ? profile.firstName : null,
+        lastName: profile ? profile.lastName : null,
+        gender: profile ? profile.gender : null,
+        address: profile ? profile.address : null,
+        mobile: profile ? profile.mobile : null,
+        dateOfBirth: profile ? profile.dateOfBirth : null,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      };
+    });
+    res.json({ users: usersWithProfiles });
   } catch (err) {
     console.error(`[ERROR] Failed to retrieve users: ${err.message}`);
     res.status(500).json({ message: "Failed to retrieve users", error: err.message });
@@ -84,12 +113,27 @@ const signup = async (req, res) => {
         { email: user.email, user: user.name, url: verificationUrl },
         { async: true }
       );
-      await sendEmail({
-        to: user.email,
-        subject: "Verify Your Email",
-        text: messageHtml,
-        html: messageHtml,
+      // Send email with verification link, but fail if not sent within 2 minutes
+      let emailSent = false;
+      let emailError = null;
+      await Promise.race([
+        sendEmail({
+          to: user.email,
+          subject: "Verify Your Email",
+          text: messageHtml,
+          html: messageHtml,
+        }).then(() => { emailSent = true; }),
+        new Promise((_, reject) => setTimeout(() => {
+          emailError = 'Verification email sending timed out (over 2 minutes)';
+          reject(new Error(emailError));
+        }, 2 * 60 * 1000)) // 2 minutes
+      ]).catch(err => {
+        emailError = err.message || 'Unknown error sending verification email';
       });
+      if (!emailSent) {
+        console.error(`[ERROR] Failed to send verification email to ${user.email}: ${emailError}`);
+        return res.status(500).json({ message: 'Failed to send verification email', error: emailError });
+      }
     }
     console.log(`[INFO] Verification email sent to ${user.email}`);
     res

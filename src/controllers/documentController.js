@@ -36,7 +36,7 @@ exports.getDocumentsByTemplateId = async (req, res) => {
           type: highlight.type,
         })),
         thumbnail : template.thumbnail,
-
+        templateId: template._id, // <-- Make sure this is set!
       });
 
       const data = await document.save();
@@ -122,6 +122,7 @@ exports.addNewDocForTemplate = async (req, res) => {
         type: h.type,
       })),
       thumbnail : template.thumbnail,
+      templateId: template._id, // <-- Make sure this is set!
     });
     // console.log(document)
     const data = await document.save();
@@ -351,38 +352,33 @@ const convertPtToPxInHtml = (html) => {
 exports.downloadDocumentIndoc = async (req, res) => {
   try {
     const { id } = req.params;
-    const highlights = req.body; // Ensure highlights are processed if needed
-
-    // Find the document by ID
     const document = await DocumentModel.findById(id);
     if (!document) {
       return res.status(404).send("Document not found");
     }
 
-    // Export and update document content
     document.content = await exportTemplate(document);
     const content = document.content;
 
-    // Load content with cheerio
-    const $ = cheerio.load(content);
-     
-   // console.log(content);
-    
-    //const styledHTML = await juice($.html());
-    //console.log(styledHTML);
-    // Convert HTML content from pt to px if necessary
-    const finalHtml = convertPtToPxInHtml($.html());
-    //console.log(finalHtml);
+    // Add this log:
+    console.log('Exported HTML content:', content);
 
-    // Convert HTML to DOCX buffer
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return res.status(400).send('Document content is empty or invalid');
+    }
+
+    const $ = cheerio.load(content);
+    const finalHtml = convertPtToPxInHtml($.html());
+
+    // Add this log:
+    console.log('Final HTML for DOCX:', finalHtml);
+
     const buffer = await fileService.convertHTMLToDocxBuffer(finalHtml);
 
-    // Set headers and send response
     res.setHeader('Content-Type', 'application/vnd.ms-word');
-    res.setHeader('Content-Disposition', `attachment; filename="${document.fileName || 'converted'}.docx"`);
+    res.setHeader('Content-Disposition', `attachment; filename=\"${document.fileName || 'converted'}.docx\"`);
     res.send(buffer);
   } catch (error) {
-    // Log error and send appropriate response
     console.error('Error during document download:', error);
     res.status(500).send("An error occurred during the download.");
   }

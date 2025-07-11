@@ -50,6 +50,7 @@ const ProfileSchema = new mongoose.Schema(
     },
     profilePic: {
       type: String, // URL or file path for the profile picture
+      // Stores the AWS S3 URL, e.g. https://s3.ap-south-1.amazonaws.com/neo.storage/profile-pics/<filename>
     },
   },
   {

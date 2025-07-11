@@ -18,6 +18,7 @@ const upload = multer({
 const {
   createAndUpdateProfile,
   getProfile,
+  getUserProfileById,
 } = require("../controllers/profileController");
 const { auth } = require("../middleware/auth");
 
@@ -41,6 +42,6 @@ const handleMulterError = (err, req, res, next) => {
 router.post("/", auth, upload.single("profilePic"), handleMulterError, createAndUpdateProfile);
 
 // Route for getting a profile by userId
-router.get("/", auth, getProfile);
+router.get("/:userId", getUserProfileById);
 
 module.exports = router;

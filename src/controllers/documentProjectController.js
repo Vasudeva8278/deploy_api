@@ -22,10 +22,12 @@ exports.getDocumentsByTemplateId = async (req, res) => {
   try {
     const templateId = req.params.id;
     const projectId = req.params.pid;
-    console.log(templateId, projectId);
+    const userId = req.userId; // Get userId from request
+    console.log(templateId, projectId, userId);
     // Find the template with the given templateId and userId
     const template = await Template.findOne({
       _id: templateId,
+      createdBy: userId,
     })
       .populate("documents")
       .populate("content highlights");
@@ -48,6 +50,7 @@ exports.getDocumentsByTemplateId = async (req, res) => {
           type: highlight.type,
         })),
         thumbnail: template.thumbnail,
+        createdBy: userId, // Associate the document with the userId
       });
 
       const data = await document.save();
@@ -60,6 +63,7 @@ exports.getDocumentsByTemplateId = async (req, res) => {
     // Refetch the template to include the newly added document
     const updatedTemplate = await Template.findOne({
       _id: templateId,
+      createdBy: userId,
     }).populate({
       path: "documents",
       populate: { path: "highlights.id" },
@@ -77,10 +81,12 @@ exports.getDocumentsByTemplateId = async (req, res) => {
 
 exports.getDocumentId = async (req, res, next) => {
   const documentId = req.params.id;
+  const userId = req.userId;
   try {
     // Retrieve the document by ID and userId to ensure it belongs to the user
     const document = await documentService.getDocumentByIdAndUserId(
-      documentId
+      documentId,
+      userId
     );
 
     // Check if document exists
@@ -198,6 +204,7 @@ exports.getDocumentId = async (req, res, next) => {
  */
 exports.createDocsForMultipleTemplates = async (req, res) => {
   const projectId = req.params.pid;
+  const userId = req.userId;
 
   try {
     const { templates } = req.body; // Expect an array of templates
@@ -286,6 +293,7 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
           type: h.type,
         })),
         thumbnail: template.thumbnail,
+        createdBy: userId,
       });
 
       // Save the document and update the template
@@ -339,7 +347,8 @@ exports.getHighlightsByTemplateId = async (req, res) => {
 
 exports.addNewDocForTemplate = async (req, res) => {
   const projectId = req.params.pid;
-  console.log("in addNewDocForTemplate");
+  const userId = req.userId;
+  console.log("in addNewDocForTemplate", userId);
 
   try {
     const { templateId, fileName, highlights } = req.body;
@@ -368,6 +377,7 @@ exports.addNewDocForTemplate = async (req, res) => {
         type: h.type,
       })),
       thumbnail: template.thumbnail,
+      createdBy: userId,
     });
     // console.log(document)
     const data = await document.save();
@@ -411,10 +421,14 @@ exports.updateDocument = async (req, res) => {
 
 // to delete a document and its references from template.
 exports.deleteDocument = async (req, res) => {
-  const { documentId } = req.params;
+  const userId = req.userId; // Assuming userId is passed as a route parameter
+  const projectId = req.params.pid;
+
   try {
+    const { documentId } = req.params;
     const document = await documentService.getDocumentByIdAndUserId(
-      documentId
+      documentId,
+      userId
     ); // Check document ownership
 
     if (!document) {
@@ -524,7 +538,8 @@ exports.zipDocuments = async (req, res) => {
 
 exports.getAllDocumentsWithTemplateName = async (req, res) => {
   const projectId = req.params.pid;
-  console.log("Here", projectId);
+  const userId = req.userId;
+  console.log("Here", projectId, userId);
   try {
     // Pagination logic
     const page = parseInt(req.query.page) || 1;
@@ -534,6 +549,7 @@ exports.getAllDocumentsWithTemplateName = async (req, res) => {
     // Step 1: Find templates based on projectId
     const templates = await Template.find({
       projectId: projectId,
+      createdBy: userId,
     })
       .select("_id fileName documents")
       .populate({
@@ -579,7 +595,8 @@ exports.getAllDocumentsWithTemplateName = async (req, res) => {
 };
 
 exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
-  console.log("getAllDocumentsWithTemplateNameByUserL ");
+  const userId = req.userId;
+  console.log("getAllDocumentsWithTemplateNameByUserL ", userId);
   try {
     // Pagination logic
     const page = parseInt(req.query.page) || 1;
@@ -587,7 +604,7 @@ exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Step 1: Find templates based on projectId
-    const templates = await Template.find({})
+    const templates = await Template.find({ createdBy: userId })
       .select("_id fileName documents")
       .populate({
         path: "documents",
@@ -853,6 +870,7 @@ async function imageToBase64(url) {
 exports.updateDocumentContent = async (req, res) => {
   const docId = req.params.id;
   const projectId = req.params.pid;
+  const userId = req.userId; // Get userId from request
   const { content } = req.body;
 
   try {
@@ -860,7 +878,8 @@ exports.updateDocumentContent = async (req, res) => {
 
     // Check if the document exists and belongs to the user
     const document = await documentService.getDocumentByIdAndUserId(
-      docId
+      docId,
+      userId
     );
 
     if (!document) {
@@ -882,11 +901,14 @@ exports.updateDocumentContent = async (req, res) => {
 
 exports.generateZipDocuments = async (req, res) => {
   const { projectId, templateId } = req.body;
+  const userId = req.userId;
   console.log(
     "templateId",
     templateId,
     "projectId",
-    projectId
+    projectId,
+    "userId",
+    userId
   );
   if (!templateId || !projectId) {
     return res.status(400).send("templateId and projectId are required");
@@ -895,6 +917,7 @@ exports.generateZipDocuments = async (req, res) => {
   const template = await Template.find({
     _id: templateId,
     projectId: projectId,
+    createdBy: userId,
   });
   const folderName = template[0].fileName;
   const documentIds = template[0].documents;
@@ -981,6 +1004,7 @@ exports.getCommonDocumentData = async (req, res) => {
   console.log(req.params);
   const projectId = req.params.id;
   const documentName = req.params.docName;
+  const userId = req.userId; // Get userId from request
 
   try {
     console.log("Fetching common highlights in project:", projectId);
@@ -1122,13 +1146,16 @@ function convertHtmlListGroups(htmlContent) {
 exports.sendDocumentViaEmail = async (req, res) => {
   console.log("Reached correct method");
   const documentId = req.params.id;
+  const userId = req.userId;
+  const user = req.user;
   try {
     // Retrieve the document by ID and userId to ensure it belongs to the user
     const document = await documentService.getDocumentByIdAndUserId(
-      documentId
+      documentId,
+      userId
     );
 
-    console.log(documentId);
+    console.log(documentId, userId, user.email);
     // Check if document exists
     if (!document) {
       return res
@@ -1148,12 +1175,12 @@ exports.sendDocumentViaEmail = async (req, res) => {
 
     let messageHtml = await ejs.renderFile(
       process.cwd() + "/src/views/documents.ejs",
-      { email: req.user.email, user: req.user.name },
+      { email: user.email, user: user.name },
       { async: true }
     );
 
     await sendEmail({
-      to: req.user.email,
+      to: user.email,
       subject: "Here is the document you requested",
       text: `Please check you attachment`,
       html: messageHtml,

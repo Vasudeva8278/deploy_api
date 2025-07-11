@@ -394,32 +394,16 @@ exports.uploadDocxToS3 = async (fileType, file, fileBuffer, folder) => {
  * @returns {Promise<string>} - The URL of the uploaded file.
  */
 const uploadToS3 = async (fileBuffer, fileName, mimeType) => {
-  // Use the same environment variables as defined in options
-  const awsConfig = {
-    accessKeyId: process.env.AWS_ACCESS_KEY,
-    secretAccessKey: process.env.AWS_SECRET_KEY,
+  AWS.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY1,
+    secretAccessKey: process.env.AWS_SECRET_KEY1,
     region: process.env.AWS_REGION,
-  };
-
-  // Debug: Log the configuration (without sensitive data)
-  console.log('AWS Config check:', {
-    hasAccessKey: !!awsConfig.accessKeyId,
-    hasSecretKey: !!awsConfig.secretAccessKey,
-    region: awsConfig.region,
-    bucketName: process.env.AWS_S3_BUCKET_NAME || 'NOT_SET'
   });
 
-  AWS.config.update(awsConfig);
   const s3 = new AWS.S3();
 
-  // Check if bucket name is defined
-  const bucketName = process.env.AWS_S3_BUCKET_NAME;
-  if (!bucketName) {
-    throw new Error('AWS_S3_BUCKET_NAME environment variable is not set');
-  }
-
   const uploadParams = {
-    Bucket: bucketName,
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: fileName,
     Body: fileBuffer,
     ContentType: mimeType,
@@ -427,13 +411,17 @@ const uploadToS3 = async (fileBuffer, fileName, mimeType) => {
   };
 
   try {
-    console.log("uploading to bucket:", bucketName);
+    console.log("uploading");
     const s3Response = await s3.upload(uploadParams).promise();
     return s3Response.Location; // Return the URL of the uploaded file
   } catch (error) {
-    console.error('S3 Upload Error:', error);
     throw new Error(`Error uploading to S3: ${error.message}`);
   }
 };
 
-module.exports = { uploadToS3 };
+module.exports = {
+  extractText: exports.extractText,
+  convertHTMLToDocxBuffer: exports.convertHTMLToDocxBuffer,
+  uploadDocxToS3: exports.uploadDocxToS3,
+  uploadToS3,
+};
