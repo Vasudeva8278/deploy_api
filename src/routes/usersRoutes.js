@@ -27,6 +27,7 @@ const { auth, admin, orgAdmin } = require("../middleware/auth");
 router.get("/me", auth, getUserProfile);
 router.put("/role/:id", auth, orgAdmin, updateUserRole);
 // Sign up a new user
+// POST /signup expects { user: { name, email, password, profilePic (filename) } }
 router.post("/signup", signup);
 
 // Log in an existing user
@@ -59,6 +60,7 @@ router.get("/getalluser", getAllUsers);
 router.get("/:id", auth, orgAdmin, getUser);
 
 // Update a user (OrgAdmin or SuperAdmin)
+// PUT /update-status/:id expects { profilePic (filename), ...other fields }
 router.put("/update-status/:id", updateUserRole);
 router.post("/reset-password/:token", resetPassword);
 

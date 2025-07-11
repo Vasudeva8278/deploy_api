@@ -38,29 +38,7 @@ const updateUserRole = async (req, res) => {
 
 const signup = async (req, res) => {
   console.log(req.body)
-  //const { user: userDetails, organization: orgDetails } = req.body;
   const { user: userDetails } = req.body;
-  /* const organization = new Organization({ 
-     ...orgDetails, 
-     status: 'New', 
-     'subscription.plan': orgDetails.subscriptionPlan 
-   });
-   await organization.save(); */
-
-  //const user = new User({ ...userDetails, orgId: organization._id, role: 'user' });
-  /* const user = new User({ ...userDetails,  role: 'user' });
-    await user.save();
-
-    //await User.setDefaultFeatures(user);
-
-    const token = await user.generateAuthToken();
-    await logActivity('signup', `User ${user.email}`)(req, res, () => {});
-    console.log(`[INFO] User ${user.email} signed up successfully`);
-    res.status(201).json({ user, token });
-  } catch (err) {
-    console.error(`[ERROR] Failed to sign up user: ${err.message}`);
-    res.status(400).json({ message: 'Failed to sign up user', error: err.message });
-  }*/
   try {
     const existingUser = await User.findOne({ email: userDetails.email });
     if (existingUser && existingUser.emailVerified) {
@@ -78,16 +56,20 @@ const signup = async (req, res) => {
 
     let user;
 
+    // Handle profilePic S3 URL
+    if (userDetails.profilePic) {
+      userDetails.profilePic = `https://s3.ap-south-1.amazonaws.com/neo.storage/profile-pics/${userDetails.profilePic}`;
+    }
+
     if (existingUser) {
       userDetails.password = await bcrypt.hash(userDetails.password, 8);
       console.log(userDetails);
       user = await User.findOneAndUpdate(
         { email: userDetails.email },
         { ...userDetails, role: "user", verificationToken },
-        { new: true } // Return the updated user
+        { new: true }
       );
     } else {
-      // Create a new user
       user = new User({
         ...userDetails,
         verificationToken,
@@ -102,7 +84,6 @@ const signup = async (req, res) => {
         { email: user.email, user: user.name, url: verificationUrl },
         { async: true }
       );
-      // Send email with verification link
       await sendEmail({
         to: user.email,
         subject: "Verify Your Email",
@@ -326,6 +307,10 @@ const getUser = async (req, res) => {
 // Update a user (OrgAdmin or SuperAdmin)
 const updateUser = async (req, res) => {
   try {
+    // Handle profilePic S3 URL
+    if (req.body.profilePic) {
+      req.body.profilePic = `https://s3.ap-south-1.amazonaws.com/neo.storage/profile-pics/${req.body.profilePic}`;
+    }
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
@@ -386,7 +371,7 @@ const getUserProfile = async (req, res) => {
     orgId: user.orgId,
     features: user.features,
     emailVerified: user.emailVerified,
-    profilePic: profile?.profilePic || null, // Append profilePic from profile
+    profilePic: user.profilePic || profile?.profilePic || null, // Prefer user.profilePic
   };
   res.json(updatedUserData);
 };
