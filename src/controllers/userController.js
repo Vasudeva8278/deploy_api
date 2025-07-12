@@ -146,30 +146,19 @@ const signup = async (req, res) => {
       .json({ message: "Failed to sign up user", error: err.message });
   }
 };
-
 const verifyEmail = async (req, res) => {
-  // Accept token from either params or query
-  const token = req.params.token || req.query.token;
-  if (!token) {
-    return res.status(400).json({ message: "No token provided." });
-  }
+  console.log("in verifying email now");
+
+  const { token } = req.params;
 
   try {
-    // Find user by verificationToken
-    let user = await User.findOne({ verificationToken: token });
-
-    // If not found, check if already verified
+    const user = await User.findOne({ verificationToken: token });
     if (!user) {
-      user = await User.findOne({ emailVerified: true, verificationToken: { $exists: false } });
-      if (user) {
-        return res.status(200).json({ message: "Email already verified. You can now log in." });
-      }
-      return res.status(400).json({ message: "Invalid or expired token." });
+      return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // Mark as verified
     user.emailVerified = true;
-    user.verificationToken = undefined;
+    user.verificationToken = undefined; // Clear the token after verification
     await user.save();
 
     res.status(200).json({
@@ -177,10 +166,11 @@ const verifyEmail = async (req, res) => {
     });
   } catch (err) {
     console.error(`[ERROR] Email verification failed: ${err.message}`);
-    res.status(500).json({ message: "Email verification failed", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Email verification failed", error: err.message });
   }
 };
-
 // Admin or OrgAdmin creates a new user
 const createUser = async (req, res) => {
   try {

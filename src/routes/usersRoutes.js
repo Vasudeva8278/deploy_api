@@ -48,8 +48,6 @@ router.get("/", auth, admin, getUsers);
 
 
 router.get("/verify-email/:token", verifyEmail);
-
-
 // Get all users for an organization (OrgAdmin or SuperAdmin)
 router.get("/orgUsers", auth, orgAdmin, getOrgUsers);
 
