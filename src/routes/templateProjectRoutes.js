@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const templateProjectController = require('../controllers/templateProjectController');
-const multer = require('multer');
-const upload = multer(); // or your multer config
 
 // get all templates on loading page
 router.get('/:pid/templates/', templateProjectController.getAllTemplates);
@@ -20,18 +18,18 @@ router.delete('/:pid/templates/:id', templateProjectController.deleteTemplateByI
 router.put('/add-highlights/:id', templateProjectController.addNewHighlight);
 
 //to delete a highlight from a template
-router.delete('/delete-highlight/:templateId', templateProjectController.deleteHighlight);
+router.delete('/delete-highlight/:templateId',templateProjectController.deleteHighlight);
 
 router.put('/:id', templateProjectController.updateTemplateById);
 
 
-router.post('/:pid/templates/converted', upload.single('file'), templateProjectController.convertedFile);
+router.post('/:pid/templates/converted', templateProjectController.convertedFile);
 
 router.get('/:id/download', templateProjectController.downloadTemplateById);
 
 router.post('/:id/export', templateProjectController.exportTemplate);
 
-router.get('/:pid/template-documents/:id', templateProjectController.getTemplateById);
+
+
 
 module.exports = router;
-

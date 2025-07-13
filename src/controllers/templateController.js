@@ -42,15 +42,11 @@ exports.convertFile = async (req, res) => {
     res.status(500).send("An error occurred during conversion.");
   }
 };
+
 exports.convertedFile = async (req, res) => {
   try {
     const file = req.file;
-    if (!file) {
-      console.error("No file uploaded. req.file is undefined.");
-      return res.status(400).send("No file uploaded.");
-    }
-    console.log("File received:", file.originalname);
-
+    console.log(file);
     let result;
     try {
       result = await fileService.uploadDocxToS3(
@@ -61,11 +57,11 @@ exports.convertedFile = async (req, res) => {
       );
     } catch (err) {
       console.error("Error while uploading file to AWS S3 bucket:", err);
-      return res.status(500).send("Failed to upload file to S3.");
+      //  return res.status(500).send("Failed to upload file to S3.");
     }
-    console.log("S3 upload result:", result);
+    console.log(result);
 
-    const fileName = file.originalname;
+    const fileName = req.file.originalname;
     const content = req.body.content;
     const thumbnail = await generateTemplateThumbnail(content);
     const newTemplate = new Template({
@@ -78,7 +74,7 @@ exports.convertedFile = async (req, res) => {
     await newTemplate.save();
     res.json(newTemplate);
   } catch (error) {
-    console.error("Error in convertedFile:", error);
+    console.error(error);
     res.status(500).send("An error occurred during conversion.");
   }
 };
