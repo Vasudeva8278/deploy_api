@@ -53,7 +53,7 @@ exports.convertedFile = async (req, res) => {
         "Template",
         file,
         "",
-        "neo-templates-bucket"
+        "neo.storage"
       );
     } catch (err) {
       console.error("Error while uploading file to AWS S3 bucket:", err);
