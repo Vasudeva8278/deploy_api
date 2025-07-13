@@ -72,7 +72,7 @@ exports.convertedFile = async (req, res) => {
     res.json(newTemplate);
   } catch (error) {
     console.error("Error in convertedFile:", error);
-    res.status(500).send("An error occurred during conversion.");
+    res.status(500).send("An error occurred during conversion.",error);
   }
 };
 
