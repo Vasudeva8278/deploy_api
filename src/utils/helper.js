@@ -3,7 +3,9 @@ const nodemailer = require("nodemailer");
 
 exports.generateTemplateThumbnail = async (content) => {
   // Launch the browser
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   const page = await browser.newPage();
 
   const htmlContent = content;
