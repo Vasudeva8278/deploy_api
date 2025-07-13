@@ -24,9 +24,10 @@ const googleAuthRoutes = require("./src/routes/googleAuthRoutes");
 
 app.use(express.urlencoded({ extended: false }));
 //app.use(express.json());
-app.use(cors());
-
-
+app.use(cors({
+  origin: "https://staging.dvy72lmpehe0l.amplifyapp.com",
+  credentials: true
+}));
 
 
 app.get("/", (req, res) => {
