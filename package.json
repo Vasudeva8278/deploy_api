@@ -57,6 +57,6 @@
   "devDependencies": {
     "@types/express-session": "^1.18.2",
     "@types/passport": "^1.0.17",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.10"
   }
 }

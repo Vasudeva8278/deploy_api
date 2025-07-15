@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
+    project_access: {
+      type: [String], // List of feature flags
+      default: [],
+    },
   },
   {
     timestamps: true,
