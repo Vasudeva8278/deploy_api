@@ -36,14 +36,20 @@ const createAndUpdateProfile = async (req, res) => {
     let profilePicUrl = "";
     if (profilePic) {
       try {
-        // Upload profile picture to S3
-        const fileName = `profile-pics/${userId}-${Date.now()}.jpg`; // Set a unique key for the image
-        profilePicUrl = await uploadToS3(
-          profilePic.buffer,
-          fileName,
-          profilePic.mimetype
-        ); // Upload to S3 and get the URL
-        console.log("Profile picture uploaded:", profilePicUrl);
+        // Check if AWS credentials are configured
+        if (!process.env.AWS_ACCESS_KEY1 || !process.env.AWS_SECRET_KEY1) {
+          console.log("AWS credentials not configured, skipping S3 upload");
+          profilePicUrl = ""; // Set to empty string if no credentials
+        } else {
+          // Upload profile picture to S3
+          const fileName = `profile-pics/${userId}-${Date.now()}.jpg`; // Set a unique key for the image
+          profilePicUrl = await uploadToS3(
+            profilePic.buffer,
+            fileName,
+            profilePic.mimetype
+          ); // Upload to S3 and get the URL
+          console.log("Profile picture uploaded:", profilePicUrl);
+        }
       } catch (uploadError) {
         console.error("Error uploading profile picture:", uploadError);
         // Continue without profile picture instead of failing the entire request
