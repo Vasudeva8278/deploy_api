@@ -899,7 +899,8 @@ exports.updateDocumentContent = async (req, res) => {
   }
 };
 
-exports.generateZipDocuments = async (req, res) => {
+exports.ZipDocumentsgenerate = async (req, res) => {
+  console.log("hiiiiiii this vasudev");
   const { projectId, templateId } = req.body;
   const userId = req.userId;
   console.log(
