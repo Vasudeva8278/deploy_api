@@ -32,16 +32,6 @@ const createAndUpdateProfile = async (req, res) => {
     // Check if profile already exists for the user
     let profile = await Profile.findOne({ userId });
 
-    const addressParts = address.split(",").map((part) => part.trim());
-
-    const formattedAddress = {
-      street: addressParts[0] || "",
-      city: addressParts[1] || "",
-      state: addressParts[2] || "",
-      postalCode: addressParts[3] || "",
-      country: addressParts[4] || "",
-    };
-    
     let profilePicUrl = "";
     if (profilePic) {
       try {
@@ -66,7 +56,7 @@ const createAndUpdateProfile = async (req, res) => {
       profile.firstName = firstName;
       profile.lastName = lastName;
       profile.gender = gender;
-      profile.address = formattedAddress;
+      profile.address = address; // Store as string directly
       profile.mobile = mobile;
       profile.dateOfBirth = dateOfBirth;
       // Only update profilePic if we have a successful upload
@@ -84,7 +74,7 @@ const createAndUpdateProfile = async (req, res) => {
         firstName,
         lastName,
         gender,
-        address: formattedAddress, // Fixed: was using formattedAddress as field name
+        address: address, // Fixed: was using formattedAddress as field name
         dateOfBirth,
         mobile,
         profilePic: profilePicUrl, // Use uploaded URL or empty string

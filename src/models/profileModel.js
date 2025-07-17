@@ -23,21 +23,7 @@ const ProfileSchema = new mongoose.Schema(
       required: true,
     },
     address: {
-      street: {
-        type: String,
-      },
-      city: {
-        type: String,
-      },
-      state: {
-        type: String,
-      },
-      postalCode: {
-        type: String,
-      },
-      country: {
-        type: String,
-      },
+      type:String,
     },
     mobile: {
       type: String, // Changed from Number to String to handle string inputs
