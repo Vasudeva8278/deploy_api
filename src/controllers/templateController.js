@@ -4,6 +4,10 @@ const Template = require("../models/Template");
 const templateService = require("../services/templateService");
 const fileService = require("../services/fileService");
 const { generateTemplateThumbnail } = require("../utils/helper");
+const htmlDocx = require("html-docx-js");
+const cheerio = require("cheerio");
+const fs = require("fs");
+const path = require("path");
 
 exports.getAllTemplates = async (req, res, next) => {
   try {

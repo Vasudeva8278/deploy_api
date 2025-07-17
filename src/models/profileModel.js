@@ -23,7 +23,8 @@ const ProfileSchema = new mongoose.Schema(
       required: true,
     },
     address: {
-      type:String,
+      type: String,
+      required: true,
     },
     mobile: {
       type: String, // Changed from Number to String to handle string inputs

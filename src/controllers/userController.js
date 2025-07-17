@@ -7,6 +7,7 @@ const { sendEmail } = require("../utils/helper");
 const { OAuth2Client } = require("google-auth-library");
 const ejs = require("ejs");
 const profileModel = require("../models/profileModel");
+const mongoose = require("mongoose");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -56,10 +57,32 @@ const updateUserRole = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    user.role = role;
+    // Only update role if provided and not empty
+    if (role && role !== "") {
+      user.role = mongoose.Types.ObjectId(role);
+    }
+    if (Array.isArray(features) && features.length > 0) {
+      user.features = features;
+    }
+    
     await user.save();
-    res.json(user);
-  } catch (err) { 
+
+    // Update or create the corresponding profile's project_access if features are provided and not empty
+    let updatedProfile = null;
+    if (Array.isArray(features) && features.length > 0) {
+      updatedProfile = await profileModel.findOneAndUpdate(
+        { userId: user._id },
+        { project_access: features },
+        { new: true, upsert: true }
+      );
+    }
+
+    res.json({
+      role: user.role,
+      features: user.features,
+      project_access: updatedProfile ? updatedProfile.project_access : undefined
+    });
+  } catch (err) {
     console.error(`[ERROR] Failed to update user: ${err.message}`);
     res.status(500).json({ message: "Failed to update user", error: err.message });
   }

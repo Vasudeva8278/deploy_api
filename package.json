@@ -52,7 +52,8 @@
     "postcss-preset-env": "^9.6.0",
     "postcss-short": "^5.0.0",
     "puppeteer": "^23.0.1",
-    "serverless-http": "^3.2.0"
+    "serverless-http": "^3.2.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express-session": "^1.18.2",

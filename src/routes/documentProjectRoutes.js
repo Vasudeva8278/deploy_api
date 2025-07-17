@@ -63,7 +63,7 @@ router.post(
 
 router.post(
   "/generate-documents",
-  documentProjectController.generateZipDocuments
+  documentProjectController.ZipDocumentsgenerate
 );
 
 module.exports = router;

@@ -32,6 +32,7 @@ const createAndUpdateProfile = async (req, res) => {
     // Check if profile already exists for the user
     let profile = await Profile.findOne({ userId });
 
+    // Store address as string directly (schema expects String, not object)
     let profilePicUrl = "";
     if (profilePic) {
       try {
@@ -68,13 +69,13 @@ const createAndUpdateProfile = async (req, res) => {
         .status(200)
         .json({ message: "Profile updated successfully", profile });
     } else {
-      // Create new profile - Fixed bug: use formattedAddress instead of address
+      // Create new profile
       profile = new Profile({
         userId,
         firstName,
         lastName,
         gender,
-        address: address, // Fixed: was using formattedAddress as field name
+        address: address, // Store as string directly
         dateOfBirth,
         mobile,
         profilePic: profilePicUrl, // Use uploaded URL or empty string
@@ -108,14 +109,12 @@ const createAndUpdateProfile = async (req, res) => {
 const getProfile = async (req, res) => {
   try {
     const profiles = await Profile.find().populate("userId", "email");
-    // Optionally format each profile as needed
+    // Format each profile as needed
     const formattedProfiles = profiles.map(profile => {
-      const { street, city, state, postalCode, country } = profile.address;
-      const addressString = `${street}, ${city}, ${state}, ${postalCode}, ${country}`;
       return {
         ...profile.toObject(),
         email: profile.userId.email,
-        address: addressString,
+        // address is already a string, no need to format
       };
     });
     return res.status(200).json({ profiles: formattedProfiles });
