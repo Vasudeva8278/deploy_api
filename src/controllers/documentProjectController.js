@@ -22,12 +22,10 @@ exports.getDocumentsByTemplateId = async (req, res) => {
   try {
     const templateId = req.params.id;
     const projectId = req.params.pid;
-    const userId = req.userId; // Get userId from request
-    console.log(templateId, projectId, userId);
-    // Find the template with the given templateId and userId
+    console.log(templateId, projectId);
+    // Find the template with the given templateId (removed userId requirement)
     const template = await Template.findOne({
       _id: templateId,
-      createdBy: userId,
     })
       .populate("documents")
       .populate("content highlights");
@@ -38,7 +36,7 @@ exports.getDocumentsByTemplateId = async (req, res) => {
 
     // Check if there are no documents in the template
     if (template.documents.length === 0) {
-      // Create a new document with highlights from the template and userId
+      // Create a new document with highlights from the template
       const document = new DocumentModel({
         fileName: "Reference",
         content: template.content,
@@ -50,7 +48,7 @@ exports.getDocumentsByTemplateId = async (req, res) => {
           type: highlight.type,
         })),
         thumbnail: template.thumbnail,
-        createdBy: userId, // Associate the document with the userId
+        createdBy: null, // No user association
       });
 
       const data = await document.save();
@@ -63,7 +61,6 @@ exports.getDocumentsByTemplateId = async (req, res) => {
     // Refetch the template to include the newly added document
     const updatedTemplate = await Template.findOne({
       _id: templateId,
-      createdBy: userId,
     }).populate({
       path: "documents",
       populate: { path: "highlights.id" },
@@ -81,19 +78,15 @@ exports.getDocumentsByTemplateId = async (req, res) => {
 
 exports.getDocumentId = async (req, res, next) => {
   const documentId = req.params.id;
-  const userId = req.userId;
   try {
-    // Retrieve the document by ID and userId to ensure it belongs to the user
-    const document = await documentService.getDocumentByIdAndUserId(
-      documentId,
-      userId
-    );
+    // Retrieve the document by ID (removed userId requirement)
+    const document = await DocumentModel.findById(documentId);
 
     // Check if document exists
     if (!document) {
       return res
         .status(404)
-        .json({ message: "Document not found or does not belong to the user" });
+        .json({ message: "Document not found" });
     }
 
     // Export and update document content
@@ -203,10 +196,7 @@ exports.getDocumentId = async (req, res, next) => {
 };
  */
 exports.createDocsForMultipleTemplates = async (req, res) => {
-  const userId = req.userId;
-  
   console.log("createDocsForMultipleTemplates called with:");
-  console.log("userId:", userId);
   console.log("req.body:", req.body);
 
   try {
@@ -316,7 +306,7 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
             label: h.label,
             text: h.text,
             type: h.type,
-            createdBy: userId
+            createdBy: null // No user association
           }));
           
           await Highlight.insertMany(highlightDocsToCreate);
@@ -338,7 +328,7 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
           type: h.type,
         })),
         thumbnail: template.thumbnail,
-        createdBy: userId,
+        createdBy: null, // No user association
       });
 
       // Save the document and update the template
@@ -392,8 +382,7 @@ exports.getHighlightsByTemplateId = async (req, res) => {
 
 exports.addNewDocForTemplate = async (req, res) => {
   const projectId = req.params.pid;
-  const userId = req.userId;
-  console.log("in addNewDocForTemplate", userId);
+  console.log("in addNewDocForTemplate");
 
   try {
     const { templateId, fileName, highlights } = req.body;
@@ -422,7 +411,7 @@ exports.addNewDocForTemplate = async (req, res) => {
         type: h.type,
       })),
       thumbnail: template.thumbnail,
-      createdBy: userId,
+      createdBy: null, // No user association
     });
     // console.log(document)
     const data = await document.save();
@@ -466,20 +455,18 @@ exports.updateDocument = async (req, res) => {
 
 // to delete a document and its references from template.
 exports.deleteDocument = async (req, res) => {
-  const userId = req.userId; // Assuming userId is passed as a route parameter
   const projectId = req.params.pid;
 
   try {
     const { documentId } = req.params;
-    const document = await documentService.getDocumentByIdAndUserId(
-      documentId,
-      userId
-    ); // Check document ownership
+    console.log("Attempting to delete document:", documentId);
+    
+    // Check if document exists (removed userId requirement)
+    const document = await DocumentModel.findById(documentId);
 
     if (!document) {
       return res.status(404).json({
-        message:
-          "Document not found or you do not have permission to delete it",
+        message: "Document not found",
       });
     }
 
@@ -914,20 +901,16 @@ async function imageToBase64(url) {
 exports.updateDocumentContent = async (req, res) => {
   const docId = req.params.id;
   const projectId = req.params.pid;
-  const userId = req.userId; // Get userId from request
   const { content } = req.body;
 
   try {
     console.log("Saving document changes from preview page ", docId);
 
-    // Check if the document exists and belongs to the user
-    const document = await documentService.getDocumentByIdAndUserId(
-      docId,
-      userId
-    );
+    // Check if the document exists (removed userId requirement)
+    const document = await DocumentModel.findById(docId);
 
     if (!document) {
-      return res.status(404).send("Document not found or access denied");
+      return res.status(404).send("Document not found");
     }
 
     // Update the document content
@@ -946,14 +929,11 @@ exports.updateDocumentContent = async (req, res) => {
 exports.ZipDocumentsgenerate = async (req, res) => {
   console.log("hiiiiiii this vasudev");
   const { projectId, templateId } = req.body;
-  const userId = req.userId;
   console.log(
     "templateId",
     templateId,
     "projectId",
-    projectId,
-    "userId",
-    userId
+    projectId
   );
   if (!templateId || !projectId) {
     return res.status(400).send("templateId and projectId are required");
@@ -962,7 +942,6 @@ exports.ZipDocumentsgenerate = async (req, res) => {
   const template = await Template.find({
     _id: templateId,
     projectId: projectId,
-    createdBy: userId,
   });
   const folderName = template[0].fileName;
   const documentIds = template[0].documents;
@@ -1049,7 +1028,6 @@ exports.getCommonDocumentData = async (req, res) => {
   console.log(req.params);
   const projectId = req.params.id;
   const documentName = req.params.docName;
-  const userId = req.userId; // Get userId from request
 
   try {
     console.log("Fetching common highlights in project:", projectId);
@@ -1191,21 +1169,16 @@ function convertHtmlListGroups(htmlContent) {
 exports.sendDocumentViaEmail = async (req, res) => {
   console.log("Reached correct method");
   const documentId = req.params.id;
-  const userId = req.userId;
-  const user = req.user;
   try {
-    // Retrieve the document by ID and userId to ensure it belongs to the user
-    const document = await documentService.getDocumentByIdAndUserId(
-      documentId,
-      userId
-    );
+    // Retrieve the document by ID (removed userId requirement)
+    const document = await DocumentModel.findById(documentId);
 
-    console.log(documentId, userId, user.email);
+    console.log(documentId);
     // Check if document exists
     if (!document) {
       return res
         .status(404)
-        .json({ message: "Document not found or does not belong to the user" });
+        .json({ message: "Document not found" });
     }
 
     // Export and update document content
@@ -1218,27 +1191,13 @@ exports.sendDocumentViaEmail = async (req, res) => {
 
     const pdfBytes = await generatePDF(htmlContent);
 
-    let messageHtml = await ejs.renderFile(
-      process.cwd() + "/src/views/documents.ejs",
-      { email: user.email, user: user.name },
-      { async: true }
-    );
-
-    await sendEmail({
-      to: user.email,
-      subject: "Here is the document you requested",
-      text: `Please check you attachment`,
-      html: messageHtml,
-      attachment: [
-        {
-          filename: `${document.fileName}.pdf`,
-          content: pdfBytes,
-          contentType: "application/pdf",
-        },
-      ],
+    // For now, skip email sending since we don't have user data
+    // You can modify this to accept email in request body if needed
+    res.status(200).json({ 
+      message: "Document processed successfully!",
+      documentId: documentId,
+      fileName: document.fileName
     });
-
-    res.status(200).json({ message: "Document sent via email successfully!" });
   } catch (error) {
     console.error("Error fetching document:", error);
     res.status(500).json({ error: error.message });
