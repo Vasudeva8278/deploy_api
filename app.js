@@ -5,6 +5,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const session = require('express-session');
 const passport = require('passport');
+const { auth } = require('./src/middleware/auth');
 const app = express();
 
 // Test route to see if server starts
@@ -142,7 +143,7 @@ try {
 }
 
 try {
-  app.use("/api/projectDocs", documentProjectRoutes);
+  app.use("/api/projectDocs", auth, documentProjectRoutes);
   console.log("✓ documentProjectRoutes loaded");
 } catch (error) {
   console.error("❌ Error loading documentProjectRoutes:", error.message);

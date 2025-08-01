@@ -203,8 +203,11 @@ exports.getDocumentId = async (req, res, next) => {
 };
  */
 exports.createDocsForMultipleTemplates = async (req, res) => {
-  const projectId = req.params.pid;
   const userId = req.userId;
+  
+  console.log("createDocsForMultipleTemplates called with:");
+  console.log("userId:", userId);
+  console.log("req.body:", req.body);
 
   try {
     const { templates } = req.body; // Expect an array of templates
@@ -221,11 +224,15 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
 
     for (const templateData of templates) {
       const { _id, docName, highlights } = templateData;
+      console.log("Processing template data:", { _id, docName, highlightsCount: highlights.length });
+      console.log("First highlight structure:", highlights[0]);
 
       const templateId = _id;
 
       // Find the template and populate its content
       const template = await Template.findById(templateId).select("content");
+      console.log("Looking for template with ID:", templateId);
+      console.log("Template found:", template ? "Yes" : "No");
       if (!template) {
         console.log(`Template with ID ${templateId} not found`);
         return res.status(404).send(`Template with ID ${templateId} not found`);
@@ -250,7 +257,7 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
           // Update the highlights of the existing document
           await DocumentModel.findByIdAndUpdate(existingDocument.documentId, {
             highlights: highlights.map((h) => ({
-              id: h._id,
+              id: h._id || h.id, // Use _id if available, otherwise use id
               highlightId: h.id,
               label: h.label,
               text: h.text,
@@ -265,18 +272,56 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
 
       // Extract highlight IDs and validate them
       const highlightIds = highlights.map((h) => h.id);
-      console.log(highlightIds);
+      console.log("Highlight IDs to validate:", highlightIds);
+      console.log("Sample highlight object:", highlights[0]);
+      
+      // Check if highlights have the required structure
+      const validHighlights = highlights.every(h => 
+        h.id && h.label && h.text && h.type
+      );
+      
+      if (!validHighlights) {
+        console.log("Invalid highlight structure provided");
+        return res
+          .status(400)
+          .send("Invalid highlight structure provided");
+      }
+      
+      // Try to find existing highlights in database (optional validation)
       const highlightDocs = await Highlight.find({
         id: { $in: highlightIds },
       });
+      
+      console.log("Found highlight docs:", highlightDocs.length);
+      console.log("Expected highlight docs:", highlightIds.length);
 
+      // If highlights don't exist in database, we'll create them or proceed anyway
       if (highlightDocs.length !== highlightIds.length) {
-        console.log(
-          `Invalid highlight IDs provided for template ${templateId}`
+        console.log("Some highlights not found in database, but proceeding with creation");
+        // Don't return error, just log the missing ones
+        const missingIds = highlightIds.filter(id => 
+          !highlightDocs.some(doc => doc.id === id)
         );
-        return res
-          .status(400)
-          .send(`Invalid highlight IDs provided for template ${templateId}`);
+        console.log("Missing highlight IDs:", missingIds);
+        
+        // Create missing highlights in database
+        const missingHighlights = highlights.filter(h => 
+          !highlightDocs.some(doc => doc.id === h.id)
+        );
+        
+        if (missingHighlights.length > 0) {
+          console.log("Creating missing highlights in database");
+          const highlightDocsToCreate = missingHighlights.map(h => ({
+            id: h.id,
+            label: h.label,
+            text: h.text,
+            type: h.type,
+            createdBy: userId
+          }));
+          
+          await Highlight.insertMany(highlightDocsToCreate);
+          console.log("Created", highlightDocsToCreate.length, "highlights in database");
+        }
       }
 
       console.log("creating document");
@@ -286,7 +331,7 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
         content: template.content,
         templateId: templateId,
         highlights: highlights.map((h) => ({
-          id: h._id,
+          id: h._id || h.id, // Use _id if available, otherwise use id
           highlightId: h.id,
           label: h.label,
           text: h.text,
