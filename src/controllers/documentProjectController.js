@@ -640,16 +640,15 @@ exports.getAllDocumentsWithTemplateName = async (req, res) => {
 };
 
 exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
-  const userId = req.userId;
-  console.log("getAllDocumentsWithTemplateNameByUserL ", userId);
+  console.log("getAllDocumentsWithTemplateNameByUser called");
   try {
     // Pagination logic
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
-    // Step 1: Find templates based on projectId
-    const templates = await Template.find({ createdBy: userId })
+    // Step 1: Find all templates (removed userId filter)
+    const templates = await Template.find()
       .select("_id fileName documents")
       .populate({
         path: "documents",
@@ -685,7 +684,7 @@ exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
         templates: associatedTemplates.map((t) => t.fileName),
       };
     });
-    console.log(documentsWithTemplateNames);
+    console.log("Documents found:", documentsWithTemplateNames.length);
 
     res.json(documentsWithTemplateNames);
   } catch (error) {

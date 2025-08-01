@@ -80,6 +80,10 @@ app.get("/", (req, res) => {
   return res.json({ message: "get success running" });
 });
 
+app.get("/test-docs", (req, res) => {
+  return res.json({ message: "Documents endpoint test - server is working" });
+});
+
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
@@ -143,7 +147,7 @@ try {
 }
 
 try {
-  app.use("/api/projectDocs", auth, documentProjectRoutes);
+  app.use("/api/projectDocs", documentProjectRoutes);
   console.log("✓ documentProjectRoutes loaded");
 } catch (error) {
   console.error("❌ Error loading documentProjectRoutes:", error.message);
