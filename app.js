@@ -72,13 +72,8 @@ console.log("✓ googleAuthRoutes loaded");
 app.use(express.urlencoded({ extended: false }));
 //app.use(express.json());
 
-// Configure CORS to allow requests from localhost:4000
-app.use(cors({
-  origin: ['http://localhost:4000', 'http://127.0.0.1:4000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+// Allow CORS for any endpoint and any origin (open CORS)
+app.use(cors());
 
 
 app.get("/", (req, res) => {
