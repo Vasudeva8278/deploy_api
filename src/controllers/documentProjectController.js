@@ -200,7 +200,20 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
   console.log("req.body:", req.body);
 
   try {
-    const { templates } = req.body; // Expect an array of templates
+    // Handle both nested and flat templates structure
+    let templates;
+    if (req.body.templates && req.body.templates.templates) {
+      // Nested structure: { templates: { templates: [...], documentName: '...', ... } }
+      templates = req.body.templates.templates;
+    } else if (Array.isArray(req.body.templates)) {
+      // Flat structure: { templates: [...] }
+      templates = req.body.templates;
+    } else {
+      return res
+        .status(400)
+        .send({ success: false, message: "Invalid templates structure" });
+    }
+
     console.log("in createDocsForMultipleTemplates templates ", templates);
     const createdDocuments = []; // Array to store IDs of created documents
 
