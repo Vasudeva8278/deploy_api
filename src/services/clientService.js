@@ -27,7 +27,7 @@ const getDocumentsByClientId = async (clientId) => {
 
 const getAllClientsWithDetails = async () => {
   const clients = await Client.find()
-    .select("_id name documents")
+    .select("_id name empid email documents")
     .populate({
       path: "documents",
       select: "fileName templateId",
