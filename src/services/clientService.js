@@ -44,6 +44,37 @@ const getAllClientsWithDetails = async () => {
   return clients;
 };
 
+// Update existing clients with proper empid and email
+const updateClientEmpidEmail = async (clientId, empid, email) => {
+  if (!clientId || !empid || !email) {
+    throw new Error("Client ID, empid, and email are required.");
+  }
+
+  // Check if empid already exists for another client
+  const existingEmpid = await Client.findOne({ empid, _id: { $ne: clientId } });
+  if (existingEmpid) {
+    throw new Error("Client with this empid already exists.");
+  }
+
+  // Check if email already exists for another client
+  const existingEmail = await Client.findOne({ email, _id: { $ne: clientId } });
+  if (existingEmail) {
+    throw new Error("Client with this email already exists.");
+  }
+
+  const updatedClient = await Client.findByIdAndUpdate(
+    clientId,
+    { empid, email },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedClient) {
+    throw new Error("Client not found.");
+  }
+
+  return updatedClient;
+};
+
 /*this method creates  if clientName not found in db
  * or updates client,  like adding new document for template
  * and adding new labels if not already existing in details.
@@ -52,7 +83,9 @@ const createOrUpdateClientDocument = async (
   clientName,
   templateId,
   documentId,
-  highlights
+  highlights,
+  empid = null,
+  email = null
 ) => {
   if (!clientName || !templateId || !documentId) {
     throw new Error(
@@ -63,14 +96,14 @@ const createOrUpdateClientDocument = async (
   let client = await Client.findOne({ name: clientName });
 
   if (!client) {
-    // Generate default empid and email for system-created clients
-    const defaultEmpid = `EMP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const defaultEmail = `client_${Date.now()}@system.generated`;
+    // Use provided empid and email, or generate defaults if not provided
+    const finalEmpid = empid || `EMP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const finalEmail = email || `client_${Date.now()}@system.generated`;
     
     client = new Client({
       name: clientName,
-      empid: defaultEmpid,
-      email: defaultEmail,
+      empid: finalEmpid,
+      email: finalEmail,
       documents: [{ templateId, documentId }],
       details: highlights.map((highlight) => ({
         label: highlight.label,
@@ -118,4 +151,5 @@ module.exports = {
   getAllClientsWithDetails,
   createOrUpdateClientDocument,
   deleteClientById,
+  updateClientEmpidEmail,
 };

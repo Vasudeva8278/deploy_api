@@ -55,6 +55,36 @@ const createClient = async (req, res) => {
   }
 };
 
+// Update client empid and email
+const updateClientEmpidEmail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { empid, email } = req.body;
+
+    // Validate required fields
+    if (!empid || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Empid and email are required fields.",
+      });
+    }
+
+    const updatedClient = await clientService.updateClientEmpidEmail(id, empid, email);
+
+    res.status(200).json({
+      success: true,
+      message: "Client empid and email updated successfully.",
+      data: updatedClient,
+    });
+  } catch (error) {
+    console.error("Error updating client empid and email:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "An error occurred while updating the client.",
+    });
+  }
+};
+
 // Fetch all clients with details
 const getAllClients = async (req, res) => {
   try {
@@ -250,6 +280,7 @@ const deleteClientById = async (req, res) => {
 
 module.exports = {
   createClient,
+  updateClientEmpidEmail,
   getAllClients,
   getClientById,
   getClientDetails,
