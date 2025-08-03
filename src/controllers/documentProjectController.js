@@ -197,7 +197,7 @@ exports.getDocumentId = async (req, res, next) => {
  */
 exports.createDocsForMultipleTemplates = async (req, res) => {
   console.log("createDocsForMultipleTemplates called with:");
-  console.log("req.body:", req.body);
+  console.log("req.body:", JSON.stringify(req.body, null, 2));
 
   try {
     // Handle both nested and flat templates structure
@@ -214,7 +214,19 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
         .send({ success: false, message: "Invalid templates structure" });
     }
 
-    console.log("in createDocsForMultipleTemplates templates ", templates);
+    // Extract empid and email from request body
+    const { empid, email } = req.body;
+
+    console.log("=== CLIENT DATA EXTRACTION ===");
+    console.log("Templates count:", templates.length);
+    console.log("Client empid from request:", empid);
+    console.log("Client email from request:", email);
+    console.log("empid type:", typeof empid);
+    console.log("email type:", typeof email);
+    console.log("empid is null/undefined:", empid == null);
+    console.log("email is null/undefined:", email == null);
+    console.log("=== END CLIENT DATA EXTRACTION ===");
+
     const createdDocuments = []; // Array to store IDs of created documents
 
     if (!templates || templates.length === 0) {
@@ -356,12 +368,23 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
       console.log("template updated");
       clientName = docName;
 
-      // Create or update the client document relationship
+      // Create or update the client document relationship with empid and email
+      console.log("=== CALLING createOrUpdateClientDocument ===");
+      console.log("clientName:", clientName);
+      console.log("templateId:", templateId);
+      console.log("documentId:", savedDocument._id);
+      console.log("highlights count:", highlights.length);
+      console.log("empid being passed:", empid);
+      console.log("email being passed:", email);
+      console.log("=== END CALL DETAILS ===");
+
       await clientService.createOrUpdateClientDocument(
         clientName,
         templateId,
         savedDocument._id,
-        highlights
+        highlights,
+        empid,
+        email
       );
 
       // Add the saved document's ID to the response array
