@@ -5,7 +5,7 @@ const clientController = require("../controllers/clientController");
 // Debug: Check if clientController functions are defined
 console.log("clientController loaded:", !!clientController);
 console.log("createClient:", typeof clientController.createClient);
-console.log("updateClientEmpidEmail:", typeof clientController.updateClientEmpidEmail);
+console.log("updateClientEmailPhone:", typeof clientController.updateClientEmailPhone);
 console.log("getAllClients:", typeof clientController.getAllClients);
 console.log("getClientById:", typeof clientController.getClientById);
 console.log("getClientDetails:", typeof clientController.getClientDetails);
@@ -24,8 +24,8 @@ router.get("/:id", clientController.getClientById);
 // Get client details with documents
 router.get("/:id/details", clientController.getClientDetails);
 
-// Update client empid and email
-router.patch("/:id/empid-email", clientController.updateClientEmpidEmail);
+// Update client email and phone_number
+router.patch("/:id/email-phone", clientController.updateClientEmailPhone);
 
 // Update a client by ID
 router.put("/:id", clientController.updateClient);

@@ -12,6 +12,8 @@ const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
 const juice = require("juice");
 const Client = require("../models/ClientModel");
+
+
 const clientService = require("../services/clientService");
 const { PDFDocument } = require("pdf-lib");
 const puppeteer = require("puppeteer");
@@ -214,17 +216,17 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
         .send({ success: false, message: "Invalid templates structure" });
     }
 
-    // Extract empid and email from request body
-    const { empid, email } = req.body;
+    // Extract email and phone_number from request body
+    const { email, phone_number } = req.body;
 
     console.log("=== CLIENT DATA EXTRACTION ===");
     console.log("Templates count:", templates.length);
-    console.log("Client empid from request:", empid);
     console.log("Client email from request:", email);
-    console.log("empid type:", typeof empid);
+    console.log("Client phone_number from request:", phone_number);
     console.log("email type:", typeof email);
-    console.log("empid is null/undefined:", empid == null);
+    console.log("phone_number type:", typeof phone_number);
     console.log("email is null/undefined:", email == null);
+    console.log("phone_number is null/undefined:", phone_number == null);
     console.log("=== END CLIENT DATA EXTRACTION ===");
 
     const createdDocuments = []; // Array to store IDs of created documents
@@ -368,14 +370,14 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
       console.log("template updated");
       clientName = docName;
 
-      // Create or update the client document relationship with empid and email
+      // Create or update the client document relationship with email and phone_number
       console.log("=== CALLING createOrUpdateClientDocument ===");
       console.log("clientName:", clientName);
       console.log("templateId:", templateId);
       console.log("documentId:", savedDocument._id);
       console.log("highlights count:", highlights.length);
-      console.log("empid being passed:", empid);
       console.log("email being passed:", email);
+      console.log("phone_number being passed:", phone_number);
       console.log("=== END CALL DETAILS ===");
 
       await clientService.createOrUpdateClientDocument(
@@ -383,8 +385,8 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
         templateId,
         savedDocument._id,
         highlights,
-        empid,
-        email
+        email,
+        phone_number
       );
 
       // Add the saved document's ID to the response array

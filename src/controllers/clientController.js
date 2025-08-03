@@ -4,22 +4,13 @@ const Client = require("../models/ClientModel");
 // Create a new client
 const createClient = async (req, res) => {
   try {
-    const { name, empid, email, details } = req.body;
+    const { name, email, phone_number, details } = req.body;
 
     // Validate required fields
-    if (!name || !empid || !email) {
+    if (!name || !email || !phone_number) {
       return res.status(400).json({
         success: false,
-        message: "Name, empid, and email are required fields.",
-      });
-    }
-
-    // Check if client with same empid already exists
-    const existingClient = await Client.findOne({ empid });
-    if (existingClient) {
-      return res.status(409).json({
-        success: false,
-        message: "Client with this empid already exists.",
+        message: "Name, email, and phone_number are required fields.",
       });
     }
 
@@ -34,8 +25,8 @@ const createClient = async (req, res) => {
 
     const newClient = new Client({
       name,
-      empid,
       email,
+      phone_number,
       details: details || [],
     });
 
@@ -55,29 +46,39 @@ const createClient = async (req, res) => {
   }
 };
 
-// Update client empid and email
-const updateClientEmpidEmail = async (req, res) => {
+// Update client email and phone_number
+const updateClientEmailPhone = async (req, res) => {
   try {
     const { id } = req.params;
-    const { empid, email } = req.body;
+    const { email, phone_number } = req.body;
+
+    console.log("=== updateClientEmailPhone DEBUG ===");
+    console.log("Request body:", req.body);
+    console.log("Extracted email:", email);
+    console.log("Extracted phone_number:", phone_number);
+    console.log("email type:", typeof email);
+    console.log("phone_number type:", typeof phone_number);
+    console.log("email truthy:", !!email);
+    console.log("phone_number truthy:", !!phone_number);
+    console.log("=== END DEBUG ===");
 
     // Validate required fields
-    if (!empid || !email) {
+    if (!email || !phone_number) {
       return res.status(400).json({
         success: false,
-        message: "Empid and email are required fields.",
+        message: "Email and phone_number are required fields.",
       });
     }
 
-    const updatedClient = await clientService.updateClientEmpidEmail(id, empid, email);
+    const updatedClient = await clientService.updateClientEmailPhone(id, email, phone_number);
 
     res.status(200).json({
       success: true,
-      message: "Client empid and email updated successfully.",
+      message: "Client email and phone_number updated successfully.",
       data: updatedClient,
     });
   } catch (error) {
-    console.error("Error updating client empid and email:", error);
+    console.error("Error updating client email and phone_number:", error);
     res.status(500).json({
       success: false,
       message: error.message || "An error occurred while updating the client.",
@@ -181,7 +182,7 @@ const getClientDetails = async (req, res) => {
 const updateClient = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, empid, email, details } = req.body;
+    const { name, email, phone_number, details } = req.body;
 
     // Validate ID
     if (!id) {
@@ -200,17 +201,6 @@ const updateClient = async (req, res) => {
       });
     }
 
-    // Check if empid is being changed and if it already exists
-    if (empid && empid !== existingClient.empid) {
-      const empidExists = await Client.findOne({ empid, _id: { $ne: id } });
-      if (empidExists) {
-        return res.status(409).json({
-          success: false,
-          message: "Client with this empid already exists.",
-        });
-      }
-    }
-
     // Check if email is being changed and if it already exists
     if (email && email !== existingClient.email) {
       const emailExists = await Client.findOne({ email, _id: { $ne: id } });
@@ -224,8 +214,8 @@ const updateClient = async (req, res) => {
 
     const updateData = {};
     if (name) updateData.name = name;
-    if (empid) updateData.empid = empid;
     if (email) updateData.email = email;
+    if (phone_number) updateData.phone_number = phone_number;
     if (details) updateData.details = details;
 
     const updatedClient = await Client.findByIdAndUpdate(
@@ -280,7 +270,7 @@ const deleteClientById = async (req, res) => {
 
 module.exports = {
   createClient,
-  updateClientEmpidEmail,
+  updateClientEmailPhone,
   getAllClients,
   getClientById,
   getClientDetails,

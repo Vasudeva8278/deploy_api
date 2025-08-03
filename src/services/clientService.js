@@ -27,7 +27,7 @@ const getDocumentsByClientId = async (clientId) => {
 
 const getAllClientsWithDetails = async () => {
   const clients = await Client.find()
-    .select("_id name empid email documents")
+    .select("_id name email phone_number documents")
     .populate({
       path: "documents",
       select: "fileName templateId",
@@ -44,16 +44,10 @@ const getAllClientsWithDetails = async () => {
   return clients;
 };
 
-// Update existing clients with proper empid and email
-const updateClientEmpidEmail = async (clientId, empid, email) => {
-  if (!clientId || !empid || !email) {
-    throw new Error("Client ID, empid, and email are required.");
-  }
-
-  // Check if empid already exists for another client
-  const existingEmpid = await Client.findOne({ empid, _id: { $ne: clientId } });
-  if (existingEmpid) {
-    throw new Error("Client with this empid already exists.");
+// Update existing clients with proper email and phone_number
+const updateClientEmailPhone = async (clientId, email, phone_number) => {
+  if (!clientId || !email || !phone_number) {
+    throw new Error("Client ID, email, and phone_number are required.");
   }
 
   // Check if email already exists for another client
@@ -64,7 +58,7 @@ const updateClientEmpidEmail = async (clientId, empid, email) => {
 
   const updatedClient = await Client.findByIdAndUpdate(
     clientId,
-    { empid, email },
+    { email, phone_number },
     { new: true, runValidators: true }
   );
 
@@ -84,20 +78,20 @@ const createOrUpdateClientDocument = async (
   templateId,
   documentId,
   highlights,
-  empid = null,
-  email = null
+  email = null,
+  phone_number = null
 ) => {
   console.log("=== createOrUpdateClientDocument CALLED ===");
   console.log("clientName:", clientName);
   console.log("templateId:", templateId);
   console.log("documentId:", documentId);
   console.log("highlights count:", highlights ? highlights.length : 0);
-  console.log("empid parameter:", empid);
   console.log("email parameter:", email);
-  console.log("empid type:", typeof empid);
+  console.log("phone_number parameter:", phone_number);
   console.log("email type:", typeof email);
-  console.log("empid is null/undefined:", empid == null);
+  console.log("phone_number type:", typeof phone_number);
   console.log("email is null/undefined:", email == null);
+  console.log("phone_number is null/undefined:", phone_number == null);
   
   if (!clientName || !templateId || !documentId) {
     throw new Error(
@@ -109,21 +103,21 @@ const createOrUpdateClientDocument = async (
   console.log("Existing client found:", client ? "Yes" : "No");
 
   if (!client) {
-    // Use provided empid and email, or generate defaults if not provided
-    const finalEmpid = empid || `EMP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Use provided email and phone_number, or generate defaults if not provided
     const finalEmail = email || `client_${Date.now()}@system.generated`;
+    const finalPhoneNumber = phone_number || `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`;
     
     console.log("=== CREATING NEW CLIENT ===");
-    console.log("finalEmpid:", finalEmpid);
     console.log("finalEmail:", finalEmail);
-    console.log("empid was provided:", !!empid);
+    console.log("finalPhoneNumber:", finalPhoneNumber);
     console.log("email was provided:", !!email);
+    console.log("phone_number was provided:", !!phone_number);
     console.log("=== END NEW CLIENT DATA ===");
     
     client = new Client({
       name: clientName,
-      empid: finalEmpid,
       email: finalEmail,
+      phone_number: finalPhoneNumber,
       documents: [{ templateId, documentId }],
       details: highlights.map((highlight) => ({
         label: highlight.label,
@@ -131,7 +125,7 @@ const createOrUpdateClientDocument = async (
       })),
     });
     await client.save();
-    console.log("New client created successfully with empid:", client.empid, "and email:", client.email);
+    console.log("New client created successfully with email:", client.email, "and phone_number:", client.phone_number);
     return client;
   }
 
@@ -174,5 +168,5 @@ module.exports = {
   getAllClientsWithDetails,
   createOrUpdateClientDocument,
   deleteClientById,
-  updateClientEmpidEmail,
+  updateClientEmailPhone,
 };
