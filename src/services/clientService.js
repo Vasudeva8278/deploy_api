@@ -63,8 +63,14 @@ const createOrUpdateClientDocument = async (
   let client = await Client.findOne({ name: clientName });
 
   if (!client) {
+    // Generate default empid and email for system-created clients
+    const defaultEmpid = `EMP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const defaultEmail = `client_${Date.now()}@system.generated`;
+    
     client = new Client({
       name: clientName,
+      empid: defaultEmpid,
+      email: defaultEmail,
       documents: [{ templateId, documentId }],
       details: highlights.map((highlight) => ({
         label: highlight.label,
@@ -98,8 +104,13 @@ const createOrUpdateClientDocument = async (
   return client;
 };
 
-const deleteClientById = async (id) => {
-  return await Client.findByIdAndDelete(id);
+const deleteClientById = async (clientId) => {
+  if (!clientId) {
+    throw new Error("Client ID is required.");
+  }
+
+  const deletedClient = await Client.findByIdAndDelete(clientId);
+  return deletedClient;
 };
 
 module.exports = {
