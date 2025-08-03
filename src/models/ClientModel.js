@@ -7,6 +7,14 @@ const clientSchema = new Schema(
       type: String,
       required: true,
     },
+    empid: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
     documents: [
       {
         templateId: {
