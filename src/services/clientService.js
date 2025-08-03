@@ -87,6 +87,18 @@ const createOrUpdateClientDocument = async (
   empid = null,
   email = null
 ) => {
+  console.log("=== createOrUpdateClientDocument CALLED ===");
+  console.log("clientName:", clientName);
+  console.log("templateId:", templateId);
+  console.log("documentId:", documentId);
+  console.log("highlights count:", highlights ? highlights.length : 0);
+  console.log("empid parameter:", empid);
+  console.log("email parameter:", email);
+  console.log("empid type:", typeof empid);
+  console.log("email type:", typeof email);
+  console.log("empid is null/undefined:", empid == null);
+  console.log("email is null/undefined:", email == null);
+  
   if (!clientName || !templateId || !documentId) {
     throw new Error(
       "Missing required fields: clientName, templateId, or documentId."
@@ -94,11 +106,19 @@ const createOrUpdateClientDocument = async (
   }
 
   let client = await Client.findOne({ name: clientName });
+  console.log("Existing client found:", client ? "Yes" : "No");
 
   if (!client) {
     // Use provided empid and email, or generate defaults if not provided
     const finalEmpid = empid || `EMP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const finalEmail = email || `client_${Date.now()}@system.generated`;
+    
+    console.log("=== CREATING NEW CLIENT ===");
+    console.log("finalEmpid:", finalEmpid);
+    console.log("finalEmail:", finalEmail);
+    console.log("empid was provided:", !!empid);
+    console.log("email was provided:", !!email);
+    console.log("=== END NEW CLIENT DATA ===");
     
     client = new Client({
       name: clientName,
@@ -111,9 +131,11 @@ const createOrUpdateClientDocument = async (
       })),
     });
     await client.save();
+    console.log("New client created successfully with empid:", client.empid, "and email:", client.email);
     return client;
   }
 
+  console.log("=== UPDATING EXISTING CLIENT ===");
   const existingDocument = client.documents.find(
     (doc) => doc.templateId.toString() === templateId.toString()
   );
@@ -134,6 +156,7 @@ const createOrUpdateClientDocument = async (
   });
 
   await client.save();
+  console.log("Existing client updated successfully");
   return client;
 };
 

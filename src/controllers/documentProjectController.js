@@ -214,13 +214,7 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
         .send({ success: false, message: "Invalid templates structure" });
     }
 
-    // Extract empid and email from request body
-    const { empid, email } = req.body;
-
     console.log("in createDocsForMultipleTemplates templates ", templates);
-    console.log("Client empid:", empid);
-    console.log("Client email:", email);
-    
     const createdDocuments = []; // Array to store IDs of created documents
 
     if (!templates || templates.length === 0) {
@@ -300,18 +294,41 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
       const highlightDocs = await Highlight.find({
         id: { $in: highlightIds },
       });
-
+      
       console.log("Found highlight docs:", highlightDocs.length);
       console.log("Expected highlight docs:", highlightIds.length);
-      
+
+      // If highlights don't exist in database, we'll create them or proceed anyway
       if (highlightDocs.length !== highlightIds.length) {
         console.log("Some highlights not found in database, but proceeding with creation");
-        console.log("Missing highlight IDs:", highlightIds.filter(id => 
+        // Don't return error, just log the missing ones
+        const missingIds = highlightIds.filter(id => 
           !highlightDocs.some(doc => doc.id === id)
-        ));
+        );
+        console.log("Missing highlight IDs:", missingIds);
+        
+        // Create missing highlights in database
+        const missingHighlights = highlights.filter(h => 
+          !highlightDocs.some(doc => doc.id === h.id)
+        );
+        
+        if (missingHighlights.length > 0) {
+          console.log("Creating missing highlights in database");
+          const highlightDocsToCreate = missingHighlights.map(h => ({
+            id: h.id,
+            label: h.label,
+            text: h.text,
+            type: h.type,
+            createdBy: null // No user association
+          }));
+          
+          await Highlight.insertMany(highlightDocsToCreate);
+          console.log("Created", highlightDocsToCreate.length, "highlights in database");
+        }
       }
 
-      // Create the document
+      console.log("creating document");
+      // Create a new document
       const document = new DocumentModel({
         fileName: docName,
         content: template.content,
@@ -327,8 +344,9 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
         createdBy: null, // No user association
       });
 
-      console.log("creating document");
+      // Save the document and update the template
       const savedDocument = await document.save();
+
       console.log("document created");
 
       await Template.findByIdAndUpdate(templateId, {
@@ -338,14 +356,12 @@ exports.createDocsForMultipleTemplates = async (req, res) => {
       console.log("template updated");
       clientName = docName;
 
-      // Create or update the client document relationship with empid and email
+      // Create or update the client document relationship
       await clientService.createOrUpdateClientDocument(
         clientName,
         templateId,
         savedDocument._id,
-        highlights,
-        empid,
-        email
+        highlights
       );
 
       // Add the saved document's ID to the response array
