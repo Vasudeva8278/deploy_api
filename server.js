@@ -12,8 +12,8 @@ const app = require('./app');
 
 var httpServer = http.createServer(app);
 
-// Force port to 7001 to avoid conflicts
-const PORT = process.env.PORT || 7002;
+// Use different ports for local dev vs PM2 production
+const PORT = process.env.NODE_ENV === 'production' ? (process.env.PORT || 7000) : 7001;
 
 const server = httpServer.listen(PORT, () => {
   console.log(`🚀 Server is running on port: ${PORT}`);
