@@ -144,7 +144,7 @@ const signup = async (req, res) => {
       // You could save this to a profile model or add a mobile field to user model
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/#/verifyEmail?token=${verificationToken}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://13.200.200.137:4000'}/#/verifyEmail?token=${verificationToken}`;
 
     if (user.email) {
       try {
