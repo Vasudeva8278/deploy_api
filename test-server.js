@@ -1,9 +1,9 @@
 const http = require('http');
 
-// Test if server is running on port 7001
+// Test if server is running on port 7000
 const options = {
   hostname: 'localhost',
-  port: 7001,
+  port: 7000,
   path: '/health',
   method: 'GET'
 };
@@ -12,8 +12,8 @@ console.log('🔍 Testing server connection...');
 
 const req = http.request(options, (res) => {
   console.log(`✅ Server is running! Status: ${res.statusCode}`);
-  console.log(`📍 Server URL: http://localhost:7001`);
-  console.log(`👤 Signup endpoint: http://localhost:7001/api/users/signup`);
+  console.log(`📍 Server URL: http://localhost:7000`);
+  console.log(`👤 Signup endpoint: http://localhost:7000/api/users/signup`);
   
   let data = '';
   res.on('data', (chunk) => {

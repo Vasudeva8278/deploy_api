@@ -36,7 +36,7 @@ npm start
 Create a `.env` file in the root directory and add the necessary environment variables:
 
 ```
-PORT=7001
+PORT=7000
 
 ```
 
