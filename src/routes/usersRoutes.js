@@ -3,7 +3,6 @@ const router = express.Router();
 
 // Check if userController exists
 const userController = require("../controllers/userController");
-console.log("userController loaded:", !!userController);
 
 const {
   signup,
@@ -24,35 +23,14 @@ const {
   googleAuthUser,
   changePassword,
   getAllUsers,
-
 } = userController;
 
-// Debug: Check if all functions are defined
-console.log("Checking userController functions:");
-console.log("signup:", typeof signup);
-console.log("login:", typeof login);
-console.log("updateUser:", typeof updateUser);
-console.log("updateUserRole:", typeof updateUserRole);
-console.log("getUserProfile:", typeof getUserProfile);
-console.log("logout:", typeof logout);
-console.log("logoutAll:", typeof logoutAll);
-console.log("createUser:", typeof createUser);
-console.log("resetPassword:", typeof resetPassword);
-console.log("verifyEmail:", typeof verifyEmail);
-console.log("googleAuthUser:", typeof googleAuthUser);
-console.log("changePassword:", typeof changePassword);
-console.log("getAllUsers:", typeof getAllUsers);
-
 const { auth, admin, orgAdmin } = require("../middleware/auth");
-
-// Debug: Check if middleware functions are defined
-console.log("auth middleware:", typeof auth);
-console.log("admin middleware:", typeof admin);
-console.log("orgAdmin middleware:", typeof orgAdmin);
 
 // Get user profile
 router.get("/me", auth, getUserProfile);
 router.put("/role/:id", auth, orgAdmin, updateUserRole);
+
 // Sign up a new user
 // POST /signup expects { user: { name, email, password, profilePic (filename) } }
 router.post("/signup", signup);
@@ -71,8 +49,6 @@ router.post("/createUser", auth, orgAdmin, createUser);
 
 // Get all users (SuperAdmin only)
 router.get("/", auth, admin, getUsers);
-
-
 
 router.get("/verify-email/:token", verifyEmail);
 // Get all users for an organization (OrgAdmin or SuperAdmin)

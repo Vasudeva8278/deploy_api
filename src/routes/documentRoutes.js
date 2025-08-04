@@ -4,6 +4,9 @@ const documentController = require("../controllers/documentController");
 
 //router.get('/:id/highlights', documentController.getHighlightsByTemplateId);
 
+// Get all documents from database
+router.get("/", documentController.getAllDocuments);
+
 // to update filesName and text in the document..
 router.put("/updatedoc/:id", documentController.updateDocument);
 

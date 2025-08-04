@@ -1,36 +1,27 @@
 const express = require("express");
 const router = express.Router();
+
 const clientController = require("../controllers/clientController");
 
-// Debug: Check if clientController functions are defined
-console.log("clientController loaded:", !!clientController);
-console.log("createClient:", typeof clientController.createClient);
-console.log("updateClientEmailPhone:", typeof clientController.updateClientEmailPhone);
-console.log("getAllClients:", typeof clientController.getAllClients);
-console.log("getClientById:", typeof clientController.getClientById);
-console.log("getClientDetails:", typeof clientController.getClientDetails);
-console.log("updateClient:", typeof clientController.updateClient);
-console.log("deleteClientById:", typeof clientController.deleteClientById);
+const {
+  createClient,
+  updateClientEmailPhone,
+  getAllClients,
+  getClientById,
+  getClientDetails,
+  updateClient,
+  deleteClientById,
+} = clientController;
 
-// Create a new client
-router.post("/", clientController.createClient);
+const { auth, admin, orgAdmin } = require("../middleware/auth");
 
-// Get all clients
-router.get("/", clientController.getAllClients);
-
-// Get a single client by ID
-router.get("/:id", clientController.getClientById);
-
-// Get client details with documents
-router.get("/:id/details", clientController.getClientDetails);
-
-// Update client email and phone_number
-router.patch("/:id/email-phone", clientController.updateClientEmailPhone);
-
-// Update a client by ID
-router.put("/:id", clientController.updateClient);
-
-// Delete a client by ID
-router.delete("/:id", clientController.deleteClientById);
+// Routes
+router.post("/", auth, createClient);
+router.get("/", auth, getAllClients);
+router.get("/:id", auth, getClientById);
+router.get("/details/:id", auth, getClientDetails);
+router.put("/:id", auth, updateClient);
+router.put("/contact/:id", auth, updateClientEmailPhone);
+router.delete("/:id", auth, deleteClientById);
 
 module.exports = router;

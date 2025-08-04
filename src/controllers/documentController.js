@@ -12,7 +12,70 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const juice = require('juice');
 
+// Get all documents from database
+exports.getAllDocuments = async (req, res) => {
+  try {
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
+    // Get total count for pagination info
+    const totalDocuments = await DocumentModel.countDocuments();
+
+    // Fetch documents with pagination and populate related fields
+    const documents = await DocumentModel.find()
+      .select('_id fileName content templateId highlights thumbnail locationUrl createdBy createdAt updatedAt')
+      .populate({
+        path: 'templateId',
+        select: 'fileName projectId',
+        populate: {
+          path: 'projectId',
+          select: 'projectName'
+        }
+      })
+      .populate({
+        path: 'createdBy',
+        select: 'name email'
+      })
+      .populate({
+        path: 'highlights.id',
+        select: 'label text type'
+      })
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .skip(skip)
+      .limit(limit)
+      .exec();
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalDocuments / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    res.status(200).json({
+      success: true,
+      message: "Documents fetched successfully.",
+      data: {
+        documents,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalDocuments,
+          documentsPerPage: limit,
+          hasNextPage,
+          hasPrevPage
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching all documents:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching documents.",
+      error: error.message
+    });
+  }
+};
 
 exports.getDocumentsByTemplateId = async (req, res) => {
   try {
@@ -387,7 +450,6 @@ exports.downloadDocumentIndoc = async (req, res) => {
 
 
 
-
 async function exportTemplate(document) {
   try {
     // Validate input
@@ -430,8 +492,8 @@ async function exportTemplate(document) {
       }
       if ($this.css('background-color') === 'inherit') {
         $this.css('background-color', '');
-      }
-    });
+      }
+    });
 
     // Return updated HTML
     return $.html();

@@ -29,10 +29,20 @@ app.use(express.json({
 //app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 
-mongoose.connect("mongodb://127.0.0.1:27017/neodb-dev", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// Updated MongoDB connection without deprecated options
+const connectDB = async () => {
+  try {
+    console.log('Connecting to Development MongoDB...');
+    const conn = await mongoose.connect("mongodb://127.0.0.1:27017/neodb-dev");
+    console.log(`✓ Development MongoDB Connected: ${conn.connection.host}:${conn.connection.port}/${conn.connection.name}`);
+  } catch (error) {
+    console.error('❌ Development MongoDB connection error:', error.message);
+    process.exit(1);
+  }
+};
+
+// Connect to database
+connectDB();
 
 const upload = multer({ storage: multer.memoryStorage(), 
                         limits: { fieldSize: 25 * 1024 * 1024 }

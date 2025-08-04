@@ -89,8 +89,7 @@ const updateUserRole = async (req, res) => {
 };
 
 const signup = async (req, res) => {
-  console.log(req.body)
-  const { user: userDetails } = req.body;
+  const { user: userDetails, mobile } = req.body;
   try {
     const existingUser = await User.findOne({ email: userDetails.email });
     if (existingUser && existingUser.emailVerified) {
@@ -102,7 +101,7 @@ const signup = async (req, res) => {
 
     const verificationToken = jwt.sign(
       { _id: userDetails.email },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "fallback-jwt-secret",
       { expiresIn: "1d" }
     );
 
@@ -113,55 +112,91 @@ const signup = async (req, res) => {
       userDetails.profilePic = `https://s3.ap-south-1.amazonaws.com/neo.storage/profile-pics/${userDetails.profilePic}`;
     }
 
+    // Prepare user data for creation/update
+    const userData = {
+      name: userDetails.name,
+      email: userDetails.email,
+      password: userDetails.password,
+      role: userDetails.role || "68621597db15fbb9bbd2f838", // Use provided role or default
+      profilePic: userDetails.profilePic,
+      verificationToken
+    };
+
+    // Remove confirmpassword and accept fields if they exist
+    delete userData.confirmpassword;
+    delete userData.accept;
+
     if (existingUser) {
-      userDetails.password = await bcrypt.hash(userDetails.password, 8);
-      console.log(userDetails);
+      userData.password = await bcrypt.hash(userData.password, 8);
       user = await User.findOneAndUpdate(
-        { email: userDetails.email },
-        { ...userDetails, role: "user", verificationToken },
+        { email: userData.email },
+        userData,
         { new: true }
       );
     } else {
-      user = new User({
-        ...userDetails,
-        verificationToken,
-      });
+      user = new User(userData);
       await user.save();
     }
-    const verificationUrl = `${process.env.FRONTEND_URL}/#/verifyEmail?token=${verificationToken}`;
+
+    // Handle mobile data separately if needed
+    if (mobile && mobile.name) {
+      console.log(`Mobile number provided: ${mobile.name}`);
+      // You could save this to a profile model or add a mobile field to user model
+    }
+
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/#/verifyEmail?token=${verificationToken}`;
 
     if (user.email) {
-      let messageHtml = await ejs.renderFile(
-        process.cwd() + "/src/views/verifyemail.ejs",
-        { email: user.email, user: user.name, url: verificationUrl },
-        { async: true }
-      );
-      // Send email with verification link, but fail if not sent within 2 minutes
-      let emailSent = false;
-      let emailError = null;
-      await Promise.race([
-        sendEmail({
-          to: user.email,
-          subject: "Verify Your Email",
-          text: messageHtml,
-          html: messageHtml,
-        }).then(() => { emailSent = true; }),
-        new Promise((_, reject) => setTimeout(() => {
-          emailError = 'Verification email sending timed out (over 2 minutes)';
-          reject(new Error(emailError));
-        }, 2 * 60 * 1000)) // 2 minutes
-      ]).catch(err => {
-        emailError = err.message || 'Unknown error sending verification email';
-      });
-      if (!emailSent) {
-        console.error(`[ERROR] Failed to send verification email to ${user.email}: ${emailError}`);
-        return res.status(500).json({ message: 'Failed to send verification email', error: emailError });
+      try {
+        let messageHtml = await ejs.renderFile(
+          process.cwd() + "/src/views/verifyemail.ejs",
+          { email: user.email, user: user.name, url: verificationUrl },
+          { async: true }
+        );
+        
+        // Send email with verification link, but fail if not sent within 2 minutes
+        let emailSent = false;
+        let emailError = null;
+        
+        await Promise.race([
+          sendEmail({
+            to: user.email,
+            subject: "Verify Your Email",
+            text: messageHtml,
+            html: messageHtml,
+          }).then(() => { emailSent = true; }),
+          new Promise((_, reject) => setTimeout(() => {
+            emailError = 'Verification email sending timed out (over 2 minutes)';
+            reject(new Error(emailError));
+          }, 2 * 60 * 1000)) // 2 minutes
+        ]).catch(err => {
+          emailError = err.message || 'Unknown error sending verification email';
+        });
+        
+        if (!emailSent) {
+          console.error(`[ERROR] Failed to send verification email to ${user.email}: ${emailError}`);
+          // Don't fail signup if email fails, just warn
+          console.warn(`[WARN] Continuing with signup despite email failure`);
+        } else {
+          console.log(`[INFO] Verification email sent to ${user.email}`);
+        }
+      } catch (emailErr) {
+        console.error(`[ERROR] Email sending failed: ${emailErr.message}`);
+        console.warn(`[WARN] Continuing with signup despite email failure`);
       }
     }
-    console.log(`[INFO] Verification email sent to ${user.email}`);
+
     res
       .status(201)
-      .json({ message: "Signup successful. Please verify your email.", user });
+      .json({ 
+        message: "Signup successful. Please verify your email.", 
+        user: { 
+          name: user.name, 
+          email: user.email, 
+          role: user.role,
+          emailVerified: user.emailVerified 
+        } 
+      });
   } catch (err) {
     console.error(`[ERROR] Failed to sign up user: ${err.message}`);
     res
