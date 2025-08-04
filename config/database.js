@@ -4,10 +4,12 @@ const connectDB = async () => {
   try {
     console.log('🔌 Connecting to MongoDB...');
     
-    // Use the working MongoDB Atlas connection from your PM2 server
-    const mongoUrl = process.env.MONGO_URI || 
-                     process.env.MONGODB_URL || 
-                     'mongodb+srv://Neo:Neo%401234@cluster0.dqv1uze.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+    // Read from environment variables - prioritize MONGODB_URL
+    const mongoUrl = process.env.MONGODB_URL;
+    
+    if (!mongoUrl) {
+      throw new Error('No MongoDB connection string found in environment variables (MONGODB_URL)');
+    }
     
     console.log(`📍 Using: ${mongoUrl.replace(/\/\/.*@/, '//***:***@')}`); // Hide credentials in logs
     
@@ -32,6 +34,10 @@ const connectDB = async () => {
     
     if (error.message.includes('IP whitelist')) {
       console.error('🌐 IP not whitelisted. Add your IP to MongoDB Atlas');
+    }
+    
+    if (error.message.includes('No MongoDB connection')) {
+      console.error('📝 Add MONGODB_URL to your environment variables');
     }
     
     // Continue without crashing

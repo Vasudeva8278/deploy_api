@@ -101,64 +101,68 @@ router.get('/logout', (req, res) => {
     });
 });
 
-// Configure Google strategy
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        let user = await User.findOne({ email: profile.emails[0].value });
+// Configure Google strategy only if environment variables are set
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL) {
+  passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL
+  }, async (accessToken, refreshToken, profile, done) => {
+      try {
+          let user = await User.findOne({ email: profile.emails[0].value });
 
-        if (!user) {
-            // Generate verification token
-            const verificationToken = jwt.sign(
-                { _id: profile.emails[0].value },
-                process.env.JWT_SECRET,
-                { expiresIn: "1d" }
-            );
+          if (!user) {
+              // Generate verification token
+              const verificationToken = jwt.sign(
+                  { _id: profile.emails[0].value },
+                  process.env.JWT_SECRET,
+                  { expiresIn: "1d" }
+              );
 
-            user = new User({
-                name: profile.displayName,
-                email: profile.emails[0].value,
-                password: Math.random().toString(36).slice(-8),
-                role: "68621597db15fbb9bbd2f838", // your ObjectId
-                emailVerified: false,
-                verificationToken,
-                profilePhoto: profile.photos[0]?.value
-            });
-            try {
-                await user.save();
+              user = new User({
+                  name: profile.displayName,
+                  email: profile.emails[0].value,
+                  password: Math.random().toString(36).slice(-8),
+                  role: "68621597db15fbb9bbd2f838", // your ObjectId
+                  emailVerified: false,
+                  verificationToken,
+                  profilePhoto: profile.photos[0]?.value
+              });
+              try {
+                  await user.save();
 
-                // Send verification email
-                const verificationUrl = `${process.env.FRONTEND_URL}/verifyEmail?token=${verificationToken}`;
-                let messageHtml = await ejs.renderFile(
-                    process.cwd() + "/src/views/verifyemail.ejs",
-                    { email: user.email, user: user.name, url: verificationUrl },
-                    { async: true }
-                );
-                await sendEmail({
-                    to: user.email,
-                    subject: "Verify Your Email",
-                    text: messageHtml,
-                    html: messageHtml,
-                });
-            } catch (err) {
-                console.error("User save error:", err);
-                return done(err, null);
-            }
-        }
+                  // Send verification email
+                  const verificationUrl = `${process.env.FRONTEND_URL}/verifyEmail?token=${verificationToken}`;
+                  let messageHtml = await ejs.renderFile(
+                      process.cwd() + "/src/views/verifyemail.ejs",
+                      { email: user.email, user: user.name, url: verificationUrl },
+                      { async: true }
+                  );
+                  await sendEmail({
+                      to: user.email,
+                      subject: "Verify Your Email",
+                      text: messageHtml,
+                      html: messageHtml,
+                  });
+              } catch (err) {
+                  console.error("User save error:", err);
+                  return done(err, null);
+              }
+          }
 
-        // Only allow login if email is verified
-        if (!user.emailVerified) {
-            return done(null, false, { message: "Please verify your email to log in." });
-        }
+          // Only allow login if email is verified
+          if (!user.emailVerified) {
+              return done(null, false, { message: "Please verify your email to log in." });
+          }
 
-        return done(null, user);
-    } catch (err) {
-        return done(err, null);
-    }
-}));
+          return done(null, user);
+      } catch (err) {
+          return done(err, null);
+      }
+  }));
+} else {
+  console.log('⚠️ Google OAuth not configured - skipping Google strategy setup');
+}
 
 passport.serializeUser((user, done) => {
   done(null, user._id);
