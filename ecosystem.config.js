@@ -9,13 +9,13 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 7000,
-      MONGO_URI: 'mongodb://127.0.0.1:27017/neodb-production',
+      MONGO_URI: 'mongodb+srv://Neo:Neo%401234@cluster0.dqv1uze.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
       JWT_SECRET: 'your-production-jwt-secret'
     },
     env_production: {
       NODE_ENV: 'production',
       PORT: 7000,
-      MONGO_URI: 'mongodb://127.0.0.1:27017/neodb-production',
+      MONGO_URI: 'mongodb+srv://Neo:Neo%401234@cluster0.dqv1uze.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
       JWT_SECRET: 'your-production-jwt-secret'
     }
   }]
