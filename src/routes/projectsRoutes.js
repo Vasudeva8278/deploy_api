@@ -16,6 +16,8 @@ router.get(
   projectsController.getTemplateHighlightsinProject
 );
 
+router.get("/:id", projectsController.getProjectById);
+
 router.post("/", upload.single("thumbnail"), projectsController.createProject);
 router.put(
   "/:id",

@@ -15,6 +15,10 @@ exports.deleteProject = async (projectId) => {
   return result ? true : false;
 };
 
+exports.getProjectById = async (projectId) => {
+  return await Project.findById(projectId);
+};
+
 // New service method to get all projects
 exports.getAllProjects = async () => {
   return await Project.find().populate("template"); // Return all projects, no filter

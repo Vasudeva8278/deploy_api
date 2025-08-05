@@ -6,6 +6,22 @@ const convertToBase64 = (fileBuffer) => {
   return fileBuffer.toString("base64");
 };
 
+
+
+exports.getProjectById = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ error: "Project ID is required" });
+  }
+  try {
+    const project = await projectsService.getProjectById(id);
+    // Return only project ID and name
+    const { _id, projectName } = project;
+    res.status(200).json({ _id, projectName });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 // Create Project
 exports.createProject = async (req, res) => {
   try {
