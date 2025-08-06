@@ -51,7 +51,7 @@ router.get(
 
 // Route with auth but no userId filtering
 router.get(
-  "/:pid/documents/documents-with-template-names-by-user",
+  "/:pid/documents/documents-with-template-names",
   auth,
   documentProjectController.getAllDocumentsWithTemplateNameByUser
 );
