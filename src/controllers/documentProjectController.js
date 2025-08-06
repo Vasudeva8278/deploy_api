@@ -24,20 +24,34 @@ exports.getDocumentsByTemplateId = async (req, res) => {
   try {
     const templateId = req.params.id;
     const projectId = req.params.pid;
-    console.log(templateId, projectId);
-    // Find the template with the given templateId (removed userId requirement)
+    const userId = req.userId; // Get userId from auth middleware for logging only
+    
+    console.log(`🔍 Fetching documents for template: ${templateId}, project: ${projectId}, user: ${userId}`);
+    
+    // Validate inputs
+    if (!templateId || !projectId) {
+      return res.status(400).json({ error: "Template ID and Project ID are required" });
+    }
+
+    // Find the template with the given templateId and validate project ownership
     const template = await Template.findOne({
       _id: templateId,
+      projectId: projectId // Only templates in this project
+      // Removed userId filter - all users in project can see templates
     })
       .populate("documents")
       .populate("content highlights");
 
     if (!template) {
-      return res.status(404).send("Template not found");
+      return res.status(404).json({ error: "Template not found or does not belong to this project" });
     }
+
+    console.log(`✅ Found template: ${template.fileName}`);
 
     // Check if there are no documents in the template
     if (template.documents.length === 0) {
+      console.log("📄 No documents found, creating reference document");
+      
       // Create a new document with highlights from the template
       const document = new DocumentModel({
         fileName: "Reference",
@@ -50,10 +64,12 @@ exports.getDocumentsByTemplateId = async (req, res) => {
           type: highlight.type,
         })),
         thumbnail: template.thumbnail,
-        createdBy: null, // No user association
+        createdBy: userId, // Associate with current user for tracking
       });
 
       const data = await document.save();
+      console.log(`✅ Created reference document: ${data._id}`);
+      
       // Update the template with the new document ID
       await Template.findByIdAndUpdate(template._id, {
         $push: { documents: document._id },
@@ -63,25 +79,39 @@ exports.getDocumentsByTemplateId = async (req, res) => {
     // Refetch the template to include the newly added document
     const updatedTemplate = await Template.findOne({
       _id: templateId,
+      projectId: projectId
     }).populate({
       path: "documents",
       populate: { path: "highlights.id" },
     });
 
-    res.send({
+    console.log(`📋 Returning ${updatedTemplate.documents.length} documents`);
+
+    res.json({
       templateName: updatedTemplate.fileName,
       documents: updatedTemplate.documents,
+      projectId: projectId,
+      templateId: templateId
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).send(error.message);
+    console.error("❌ Error in getDocumentsByTemplateId:", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
 exports.getDocumentId = async (req, res, next) => {
   const documentId = req.params.id;
+  const userId = req.userId; // Get userId from auth middleware for logging only
+  
   try {
-    // Retrieve the document by ID (removed userId requirement)
+    console.log(`🔍 Fetching document: ${documentId} for user: ${userId}`);
+    
+    // Validate inputs
+    if (!documentId) {
+      return res.status(400).json({ error: "Document ID is required" });
+    }
+
+    // Retrieve the document by ID
     const document = await DocumentModel.findById(documentId);
 
     // Check if document exists
@@ -91,14 +121,31 @@ exports.getDocumentId = async (req, res, next) => {
         .json({ message: "Document not found" });
     }
 
+    // Additional security check: Verify document belongs to a template in any project
+    const template = await Template.findOne({
+      documents: documentId
+    });
+
+    if (!template) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Document not found in any template." });
+    }
+
+    console.log(`✅ Found document: ${document.fileName} in template: ${template.fileName}`);
+
     // Export and update document content
     document.content = await exportTemplate(document);
 
     // Send response
-    res.json(document);
+    res.json({
+      document: document,
+      templateName: template.fileName,
+      projectId: template.projectId
+    });
   } catch (error) {
     // Pass the error to the next middleware
-    console.error("Error fetching document:", error.message);
+    console.error("❌ Error fetching document:", error.message);
     next(error);
   }
 };
@@ -608,18 +655,20 @@ exports.zipDocuments = async (req, res) => {
 
 exports.getAllDocumentsWithTemplateName = async (req, res) => {
   const projectId = req.params.pid;
-  const userId = req.userId;
-  console.log("Here", projectId, userId);
+  const userId = req.userId; // Get userId from auth middleware for logging only
+  
   try {
+    console.log(`🔍 Fetching documents for project: ${projectId}, user: ${userId}`);
+    
     // Pagination logic
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
-    // Step 1: Find templates based on projectId
+    // Step 1: Find ALL templates in the project (no userId filter)
     const templates = await Template.find({
-      projectId: projectId,
-      createdBy: userId,
+      projectId: projectId
+      // No userId filter - get all templates in the project
     })
       .select("_id fileName documents")
       .populate({
@@ -628,11 +677,15 @@ exports.getAllDocumentsWithTemplateName = async (req, res) => {
         select: "_id fileName thumbnail highlights",
       })
       .exec();
-    // console.log("@285", templates)
+    
+    console.log(`📋 Found ${templates.length} templates in project`);
+    
     // Step 2: Extract the document IDs from the templates
     const documentIds = templates.reduce((ids, template) => {
       return ids.concat(template.documents.map((doc) => doc._id));
     }, []);
+
+    console.log(`📄 Found ${documentIds.length} document IDs`);
 
     // Step 3: Fetch documents that are associated with the templates
     const documents = await DocumentModel.find({ _id: { $in: documentIds } })
@@ -657,23 +710,50 @@ exports.getAllDocumentsWithTemplateName = async (req, res) => {
       };
     });
 
-    res.json(documentsWithTemplateNames);
+    console.log(`✅ Returning ${documentsWithTemplateNames.length} documents`);
+
+    res.json({
+      documents: documentsWithTemplateNames,
+      pagination: {
+        page,
+        limit,
+        total: documentIds.length,
+        totalPages: Math.ceil(documentIds.length / limit)
+      }
+    });
   } catch (error) {
-    console.log(error);
+    console.error("❌ Error in getAllDocumentsWithTemplateName:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
 exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
   console.log("getAllDocumentsWithTemplateNameByUser called");
+  const userId = req.userId; // Get userId from auth middleware for logging only
+  const projectId = req.params.pid; // Get projectId from route parameters
+  
   try {
+    // Validate projectId
+    if (!projectId) {
+      return res.status(400).json({ error: "Project ID is required" });
+    }
+
+    console.log(`🔍 Fetching documents for project: ${projectId}, user: ${userId}`);
+
+    // Test query: Check total templates in project
+    const totalTemplatesInProject = await Template.countDocuments({ projectId: projectId });
+    console.log(`📊 Total templates in project: ${totalTemplatesInProject}`);
+
     // Pagination logic
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
-    // Step 1: Find all templates (removed userId filter)
-    const templates = await Template.find()
+    // Step 1: Find ALL templates in the project (no userId filter)
+    const query = { projectId: projectId };
+    console.log(`🔍 Database query:`, JSON.stringify(query));
+    
+    const templates = await Template.find(query)
       .select("_id fileName documents")
       .populate({
         path: "documents",
@@ -682,10 +762,14 @@ exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
       })
       .exec();
 
+    console.log(`📋 Found ${templates.length} templates in project (no user filter)`);
+
     // Step 2: Extract the document IDs from the templates
     const documentIds = templates.reduce((ids, template) => {
       return ids.concat(template.documents.map((doc) => doc._id));
     }, []);
+
+    console.log(`📄 Found ${documentIds.length} document IDs`);
 
     // Step 3: Fetch documents that are associated with the templates
     const documents = await DocumentModel.find({ _id: { $in: documentIds } })
@@ -709,11 +793,20 @@ exports.getAllDocumentsWithTemplateNameByUser = async (req, res) => {
         templates: associatedTemplates.map((t) => t.fileName),
       };
     });
-    console.log("Documents found:", documentsWithTemplateNames.length);
 
-    res.json(documentsWithTemplateNames);
+    console.log(`✅ Returning ${documentsWithTemplateNames.length} documents`);
+
+    res.json({
+      documents: documentsWithTemplateNames,
+      pagination: {
+        page,
+        limit,
+        total: documentIds.length,
+        totalPages: Math.ceil(documentIds.length / limit)
+      }
+    });
   } catch (error) {
-    console.log(error);
+    console.error("❌ Error in getAllDocumentsWithTemplateNameByUser:", error);
     res.status(500).json({ error: error.message });
   }
 };
