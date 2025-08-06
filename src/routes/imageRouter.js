@@ -5,6 +5,6 @@ const { auth  } = require('../middleware/auth');
 
 router.post('/uploadImage',auth,imageController.uploadImage)
 
-router.get('/:imageName', imageController.getImage);
+router.get('/:imageName', auth, imageController.getImage);
 
 module.exports = router;
