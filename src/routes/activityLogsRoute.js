@@ -4,12 +4,12 @@ const {
   getAllActivityLogs,
   getOrgActivityLogs,
 } = require('../controllers/activityLogController');
-const { auth, admin, orgAdmin } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
-// Get all activity logs (SuperAdmin only)
-router.get('/all', auth, admin, getAllActivityLogs);
+// Get all activity logs
+router.get('/all', auth, getAllActivityLogs);
 
-// Get activity logs for a specific organization (OrgAdmin or SuperAdmin)
-router.get('/org', auth, orgAdmin, getOrgActivityLogs);
+// Get activity logs for a specific organization
+router.get('/org', auth, getOrgActivityLogs);
 
 module.exports = router;

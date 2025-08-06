@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { getPayments, createPayment } = require('../controllers/paymentController');
-const { auth, admin, orgAdmin } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
-// Get all payments for an organization (OrgAdmin or SuperAdmin)
-router.get('/:orgId', auth, orgAdmin, getPayments);
+// Get all payments for an organization
+router.get('/:orgId', auth, getPayments);
 
-// Create a new payment record (SuperAdmin only)
-router.post('/', auth, admin, createPayment);
+// Create a new payment record
+router.post('/', auth, createPayment);
 
 module.exports = router;

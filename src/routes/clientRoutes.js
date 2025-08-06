@@ -13,7 +13,7 @@ const {
   deleteClientById,
 } = clientController;
 
-const { auth, admin, orgAdmin } = require("../middleware/auth");
+const { auth } = require("../middleware/auth");
 
 // Routes
 router.post("/", auth, createClient);

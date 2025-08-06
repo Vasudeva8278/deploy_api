@@ -25,11 +25,11 @@ const {
   getAllUsers,
 } = userController;
 
-const { auth, admin, orgAdmin } = require("../middleware/auth");
+const { auth } = require("../middleware/auth");
 
 // Get user profile
 router.get("/me", auth, getUserProfile);
-router.put("/role/:id", auth, orgAdmin, updateUserRole);
+router.put("/role/:id", auth, updateUserRole);
 
 // Sign up a new user
 // POST /signup expects { user: { name, email, password, profilePic (filename) } }
@@ -44,31 +44,31 @@ router.post("/google-auth", googleAuthUser);
 // Forgot password
 router.post("/forgotPassword", forgotPassword);
 
-// Create a new user (OrgAdmin or SuperAdmin)
-router.post("/createUser", auth, orgAdmin, createUser);
+// Create a new user
+router.post("/createUser", auth, createUser);
 
-// Get all users (SuperAdmin only)
-router.get("/", auth, admin, getUsers);
+// Get all users
+router.get("/", auth, getUsers);
 
 router.get("/verify-email/:token", verifyEmail);
-// Get all users for an organization (OrgAdmin or SuperAdmin)
-router.get("/orgUsers", auth, orgAdmin, getOrgUsers);
+// Get all users for an organization
+router.get("/orgUsers", auth, getOrgUsers);
 
-// Get all users for an organization (OrgAdmin or SuperAdmin)
-router.get("/getalluser", getAllUsers);
+// Get all users for an organization
+router.get("/getalluser", auth, getAllUsers);
 
-// Get a specific user (OrgAdmin or SuperAdmin)
-router.get("/:id", auth, orgAdmin, getUser);
+// Get a specific user
+router.get("/:id", auth, getUser);
 
-// Update a user (OrgAdmin or SuperAdmin)
+// Update a user
 // PUT /update-status/:id expects { profilePic (filename), ...other fields }
-router.put("/update-status/:id", updateUser);
+router.put("/update-status/:id", auth, updateUser);
 router.post("/reset-password/:token", resetPassword);
 
 router.post("/change-password", auth, changePassword);
 
-// Delete a user (OrgAdmin or SuperAdmin)
-router.delete("/delete/:id", deleteUser);
+// Delete a user
+router.delete("/delete/:id", auth, deleteUser);
 
 // Logout user
 router.post("/logout", auth, logout);

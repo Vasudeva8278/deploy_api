@@ -42,6 +42,6 @@ const handleMulterError = (err, req, res, next) => {
 router.post("/", auth, upload.single("profilePic"), handleMulterError, createAndUpdateProfile);
 
 // Route for getting a profile by userId
-router.get("/:userId", getUserProfileById);
+router.get("/:userId", auth, getUserProfileById);
 
 module.exports = router;
