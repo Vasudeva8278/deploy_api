@@ -394,6 +394,7 @@ exports.getAllTemplatesForHomePage = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
+
     // Fetch templates associated with the given projectId (all templates in the project)
     const templates = await Template.find({ projectId: projectId }) // Filter by projectId only
       .select("_id fileName thumbnail createdAt updatedTime")

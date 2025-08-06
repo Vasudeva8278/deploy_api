@@ -45,14 +45,14 @@ const connectDB = async () => {
 connectDB();
 
 const upload = multer({ storage: multer.memoryStorage(), 
-                        limits: { fieldSize: 25 * 1024 * 1024 }
+                        limits: { fieldSize: 25 * 1024 * 1024 }
 });
 //app.use(upload.single("docxFile"));
 //app.use(upload.single("image"));
 app.use('/api/users', usersRouter);
-app.use('/api/templates',auth, upload.single("docxFile"), templateRoutes);
+app.use('/api/templates',auth, templateRoutes);
 app.use('/api/documents',auth, documentRoutes);
-app.use('/api/project', auth,upload.single("docxFile"), templateProjectRoutes);
+app.use('/api/project', auth, templateProjectRoutes);
 app.use('/api/projectDocs', auth,documentProjectRoutes);
 app.use('/api/projects',auth,projectRoutes);
 app.use('/api/image', imageRouter);
