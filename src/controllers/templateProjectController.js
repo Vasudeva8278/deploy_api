@@ -1,17 +1,25 @@
 const Document = require("../models/Document");
 const Highlight = require("../models/Highlight");
 const Template = require("../models/Template");
+const Project = require("../models/Project");
 const templateService = require("../services/templateService");
 const fileService = require("../services/fileService");
 const { generateTemplateThumbnail } = require("../utils/helper");
+const fs = require("fs");
+const path = require("path");
+const cheerio = require("cheerio");
+const htmlDocx = require("html-docx-js");
 
 exports.getAllTemplates = async (req, res, next) => {
   const projectId = req.params.pid;
   const userId = req.userId;
-  const query = { createdBy: userId, projectId: projectId };
-
+  
   try {
-    const templates = await Template.find({ query }).populate("highlights");
+    // Get templates for this project, but only those created by the current user
+    const templates = await Template.find({ 
+      projectId: projectId,
+      createdBy: userId 
+    }).populate("highlights");
     res.json(templates);
   } catch (error) {
     console.error(error);
@@ -24,10 +32,18 @@ exports.getTemplateById = async (req, res, next) => {
   const userId = req.userId;
   const templateId = req.params.id;
   console.log(projectId, userId, templateId);
-  const query = { createdBy: userId, _id: templateId, projectId: projectId };
-
+  
   try {
-    const template = await templateService.getTemplateById(query);
+    // Get template by ID, but ensure it belongs to the specified project
+    const template = await Template.findOne({ 
+      _id: templateId,
+      projectId: projectId 
+    }).populate("highlights");
+    
+    if (!template) {
+      return res.status(404).json({ message: "Template not found or does not belong to this project" });
+    }
+    
     res.json(template);
   } catch (error) {
     next(error);
@@ -67,6 +83,14 @@ exports.convertedFile = async (req, res) => {
       createdBy: req.userId,
     });
     await newTemplate.save();
+
+    // Update the project's template array to include the new template
+    await Project.findByIdAndUpdate(
+      projectId,
+      { $push: { template: newTemplate._id } },
+      { new: true }
+    );
+
     res.json(newTemplate);
   } catch (error) {
     console.error("hi there",error);
@@ -204,6 +228,7 @@ exports.deleteHighlight = async (req, res) => {
 exports.deleteTemplateById = async (req, res, next) => {
   const templateId = req.params.id;
   const userId = req.userId;
+  const projectId = req.params.pid;
 
   try {
     // Find the template by templateId and createdBy (userId)
@@ -222,6 +247,13 @@ exports.deleteTemplateById = async (req, res, next) => {
 
     // Delete all documents associated with the template
     await Document.deleteMany({ _id: { $in: template.documents } });
+
+    // Remove the template from the project's template array
+    await Project.findByIdAndUpdate(
+      projectId,
+      { $pull: { template: templateId } },
+      { new: true }
+    );
 
     // Delete the template itself
     await Template.findByIdAndDelete(templateId);
@@ -357,18 +389,17 @@ exports.exportTemplate = async (req, res) => {
 
 exports.getAllTemplatesForHomePage = async (req, res, next) => {
   const projectId = req.params.pid; // Extract projectId from the route parameters
-  const createdBy = req.userId;
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
-    // Fetch templates associated with the given projectId
-    const templates = await Template.find({ projectId, createdBy }) // Filter by projectId
+    // Fetch templates associated with the given projectId (all templates in the project)
+    const templates = await Template.find({ projectId: projectId }) // Filter by projectId only
       .select("_id fileName thumbnail createdAt updatedTime")
       .sort({ updatedTime: -1 }) // Sort by updatedTime in descending order
-      //.skip(skip)                 // Skip the records based on the current page
-      // .limit(limit)
+      .skip(skip)                 // Skip the records based on the current page
+      .limit(limit)
       .exec();
 
     res.json(templates);
@@ -380,10 +411,9 @@ exports.getAllTemplatesForHomePage = async (req, res, next) => {
 
 exports.getAllTemplatesByProjectId = async (req, res, next) => {
   const projectId = req.params.pid; // Extract projectId from the route parameters
-  const createdBy = req.userId;
   try {
-    // Fetch templates associated with the given projectId
-    const templates = await Template.find({ projectId, createdBy }) // Filter by projectId
+    // Fetch templates associated with the given projectId (all templates in the project)
+    const templates = await Template.find({ projectId: projectId }) // Filter by projectId only
       .select("_id fileName")
       .exec();
     res.json(templates);

@@ -1,7 +1,14 @@
 const express = require("express");
+const multer = require("multer");
 const router = express.Router();
 const templateController = require("../controllers/templateController");
 const { auth } = require("../middleware/auth");
+
+// Configure multer for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fieldSize: 25 * 1024 * 1024 }
+});
 
 // get all templates on loading page
 router.get("/", auth, templateController.getAllTemplates);
@@ -32,9 +39,10 @@ router.delete(
 );
 
 router.put("/:id", auth, templateController.updateTemplateById);
-router.post("/convert", auth, templateController.convertFile);
 
-router.post("/converted", auth, templateController.convertedFile);
+// File upload routes - need multer
+router.post("/convert", auth, upload.single("docxFile"), templateController.convertFile);
+router.post("/converted", auth, upload.single("docxFile"), templateController.convertedFile);
 
 router.get("/:id/download", auth, templateController.downloadTemplateById);
 

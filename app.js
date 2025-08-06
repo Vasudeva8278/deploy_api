@@ -80,7 +80,7 @@ try {
 }
 
 try {
-  app.use("/api/templates", upload.single("docxFile"), templateRoutes);
+  app.use("/api/templates", templateRoutes);
 } catch (error) {
   console.error("❌ Error loading templateRoutes:", error.message);
 }
@@ -92,7 +92,7 @@ try {
 }
 
 try {
-  app.use("/api/project", upload.single("docxFile"), templateProjectRoutes);
+  app.use("/api/project", templateProjectRoutes);
 } catch (error) {
   console.error("❌ Error loading templateProjectRoutes:", error.message);
 }
@@ -149,12 +149,6 @@ try {
   app.use("/api/roles",roleRoutes)
 } catch (error) {
   console.error("❌ Error loading roleRoutes:", error.message);
-}
-
-try {
-  app.use("/api/projectDocs", templateProjectRoutes);
-} catch (error) {
-  console.error("❌ Error loading templateProjectRoutes (duplicate):", error.message);
 }
 
 app.get("/health", (req, res) => {
