@@ -255,6 +255,19 @@ const createUser = async (req, res) => {
 // Log in an existing user
 const login = async (req, res) => {
   try {
+    console.log('🔐 Login attempt for email:', req.body.email);
+    
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.error('❌ Database not connected. ReadyState:', mongoose.connection.readyState);
+      return res.status(500).json({
+        message: "Database connection error. Please try again later.",
+        error: "Database not connected"
+      });
+    }
+    
+    console.log('✅ Database connected, proceeding with login...');
+    
     let user = await User.findByCredentials(
       req.body.email,
       req.body.password
@@ -284,6 +297,22 @@ const login = async (req, res) => {
     res.json({ user, token });
   } catch (err) {
     console.error(`[ERROR] Failed to login user: ${err.message}`);
+    
+    // More specific error messages
+    if (err.message.includes('buffering timed out')) {
+      return res.status(500).json({
+        message: "Database connection timeout. Please try again.",
+        error: "Database timeout"
+      });
+    }
+    
+    if (err.message.includes('ECONNREFUSED')) {
+      return res.status(500).json({
+        message: "Database server not reachable. Please try again later.",
+        error: "Database connection refused"
+      });
+    }
+    
     res.status(400).json({
       message: err.message ? err.message : "Unable to login. Please try later",
       error: err.message,

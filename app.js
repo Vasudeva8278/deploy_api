@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const cors = require("cors");
 const bodyParser = require('body-parser');
+const connectDB = require('./config/database');
 const app = express();
 
 const templateRoutes = require('./src/routes/templateRoutes');
@@ -21,6 +22,9 @@ const roleRoutes = require('./src/routes/roleRoutes');
 const clientRouter = require('./src/routes/clientRoutes');
 const googleAuthRoutes = require('./src/routes/googleAuthRoutes');
 const { auth } = require('./src/middleware/auth');
+
+// Connect to database
+connectDB();
 
 // Middleware
 app.use(express.urlencoded({ extended: false }));
@@ -107,7 +111,7 @@ try {
 try {
   app.use("/api/clients", auth, clientRouter);
 } catch (error) {
-
+  console.error("❌ Error loading clientRouter:", error.message);
 }
 
 try {
