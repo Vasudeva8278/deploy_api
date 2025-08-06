@@ -10,12 +10,12 @@ const upload = multer({
   limits: { fieldSize: 25 * 1024 * 1024 }
 });
 
-// get all templates on loading page
-router.get('/:pid/templates/', auth, templateProjectController.getAllTemplates);
-
 // Specific routes must come before parameterized routes
 router.get('/:pid/templates/homePageTemplates/', auth, templateProjectController.getAllTemplatesForHomePage);
 router.get('/:pid/templates/templatesList/', auth, templateProjectController.getAllTemplatesByProjectId);
+
+// get all templates on loading page
+router.get('/:pid/templates/', auth, templateProjectController.getAllTemplates);
 
 //get template by on DocxToTextConverter
 router.get('/:pid/templates/:id', auth, templateProjectController.getTemplateById);
