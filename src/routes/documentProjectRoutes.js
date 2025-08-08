@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const documentProjectController = require("../controllers/documentProjectController");
+const templateProjectController = require("../controllers/templateProjectController");
 const { sendEmail } = require("../utils/helper");
 const { auth } = require("../middleware/auth");
 
@@ -11,6 +12,12 @@ router.put("/updatedoc/:id", auth, documentProjectController.updateDocument);
 
 // to add a new document for a template doc.
 router.post("/add-document", auth, documentProjectController.addNewDocForTemplate);
+
+//to add or update a highlight in a templateDoc
+router.put('/add-highlights/:id', auth, templateProjectController.addNewHighlight);
+
+//to delete a highlight from a template
+router.delete('/delete-highlight/:templateId', auth, templateProjectController.deleteHighlight);
 
 router.get(
   "/commonData/:id/:docName",

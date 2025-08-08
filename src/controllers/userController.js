@@ -488,6 +488,7 @@ const getUserProfile = async (req, res) => {
     id: user._id,
     name: user.name,
     email: user.email,
+    mobile: user.mobile,
     role: user.role,
     orgId: user.orgId,
     features: user.features,
