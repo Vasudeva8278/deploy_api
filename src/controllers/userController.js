@@ -483,12 +483,37 @@ const deleteUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   const user = req.user;
   console.log(`[INFO] Retrieved profile for user ${req.user.email}`);
-  const profile = await profileModel.findOne({ userId: user._id });
+  console.log(`[DEBUG] User ID: ${user._id}`);
+  console.log(`[DEBUG] User ID type: ${typeof user._id}`);
+  
+  // Try to find profile by userId - handle both ObjectId and string cases
+  let profile = await profileModel.findOne({ userId: user._id });
+  
+  // If not found, try with string conversion
+  if (!profile) {
+    console.log(`[DEBUG] Profile not found by ObjectId, trying string conversion...`);
+    profile = await profileModel.findOne({ userId: user._id.toString() });
+  }
+  
+  // If still not found, try to find by email (as a last resort)
+  if (!profile) {
+    console.log(`[DEBUG] Profile not found by userId, trying to find by email...`);
+    // This would require a different approach - we'd need to join with User collection
+    // For now, let's just log the issue
+    console.log(`[WARN] No profile found for user ${user.email} with ID ${user._id}`);
+  }
+  
+  console.log(`[DEBUG] Found profile:`, profile ? 'Yes' : 'No');
+  if (profile) {
+    console.log(`[DEBUG] Profile mobile: ${profile.mobile}`);
+    console.log(`[DEBUG] Profile userId: ${profile.userId}`);
+  }
+  
   const updatedUserData = {
     id: user._id,
     name: user.name,
     email: user.email,
-    mobile: user.mobile,
+    mobile: profile ? profile.mobile : null, // Get mobile from profile
     role: user.role,
     orgId: user.orgId,
     features: user.features,
